@@ -20,7 +20,7 @@ class Main(Camera, SerialComm):
             '-crf': '0',
             '-preset': 'slow',
             '-pix_fmt': 'yuvj444p',
-            '-framerate': '30'
+            '-framerate': '30'  # ! <- framerate of the output videos
         }
     }
 

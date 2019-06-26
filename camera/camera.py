@@ -6,6 +6,7 @@ import skvideo.io
 import os
 import cv2
 import numpy as np
+import time
 
 class Camera():
     def __init__(self):
@@ -62,19 +63,25 @@ class Camera():
             self.display_frames[i] = cv2.namedWindow("Frame_{}".format(i), cv2.WINDOW_NORMAL)
             self.grabs[i] = cam.RetrieveResult(self.camera_config["timeout"]*100)
 
-    def stream_videos(self):
+    def stream_videos(self, max_frames=100, debug=False, display=True, fix_fps=False):
+        if debug:
+            delta_t = [[] for i in self.display_frames]
+            prev_t = [time.time() for i in self.display_frames]
+
         #self.grab.GrabSucceeded is false when a camera doesnt get a frame
         while True:
             try:
                 grabbers = list(self.grabs.values()).copy()
-                for i, (writer, grab, cam) in enumerate(zip(self.cam_writers.values(), grabbers, self.cameras)): # Loop over each camera and get frames
+
+                # Loop over each camera and get frames
+                for i, (writer, grab, cam) in enumerate(zip(self.cam_writers.values(), grabbers, self.cameras)): 
                     writer.writeFrame(grab.Array)
 
-                    if self.frame_count % 10 == 0:
-                        print("Frames: ", self.frame_count)
+                    if i == 0 and self.frame_count % 10 == 0: print("Frames: ", self.frame_count)
+
+                    if self.frame_count % 10 == 0 and display:
                         cv2.imshow("Frame_{}".format(i), grab.Array)
                         cv2.waitKey(1)
-                    self.frame_count += 1
 
                     grab = cam.RetrieveResult(self.camera_config["timeout"])
                     if not grab.GrabSucceeded():
@@ -82,11 +89,31 @@ class Camera():
                     else:
                         self.grabs[i] = grab
 
+                    # If debug check how long has elapsed
+                    if debug:
+                        now = time.time()
+                        deltat = now-prev_t[i]
+                        delta_t[i].append(deltat*1000)
+                        prev_t[i] = now
+
+                # ? Try stopping
+                if fix_fps:
+                    time.sleep(fix_fps/1000)
+
+                # Update frame count and terminate
+                self.frame_count += 1
+
+                if max_frames is not None:
+                        if self.frame_count >= max_frames: break
+
+
             except pylon.TimeoutException as e:
                 print(e)
                 [writer.close() for writer in self.cam_writers]
                 break
 
+        if debug:
+            return delta_t
 
 
 
