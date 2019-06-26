@@ -80,10 +80,6 @@ class Camera():
 
             # ! if you want to extract timestamps for the frames: https://github.com/basler/pypylon/blob/master/samples/grabchunkimage.py
 
-    
-            # self.display_frames[i] = cv2.namedWindow("Frame_{}".format(i), cv2.WINDOW_NORMAL)
-            # self.grabs[i] = cam.RetrieveResult(self.camera_config["timeout"]*100)
-
     def stream_videos(self, max_frames=100, debug=False, display=True, fix_fps=False):
             if debug:
                 delta_t = [[] for i in range(self.camera_config["n_cameras"])]
