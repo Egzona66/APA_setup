@@ -21,7 +21,8 @@ class Main(Camera, SerialComm):
             '-preset': 'slow',
             '-pix_fmt': 'yuvj444p',
             '-framerate': '30'  # ! <- framerate of the output videos
-        }
+        },
+        "trigger_mode":True,
     }
 
     # Serial Comms (Arduino) options
