@@ -2,6 +2,7 @@ import serial
 import warnings
 import numpy as np
 from pyfirmata2 import ArduinoMega as Arduino
+from pyfirmata2 import util
 import sys
 import time
 
@@ -110,7 +111,12 @@ class SerialComm:
 	def setup_pins(self):
 		# Given an arduino connected to firmata, create 
 		# variables to reference the different pins
-		self.arduino_inputs = {k:self.arduino.digital[p] for k,p in self.arduino_config["sensors_pins"].items()}
+		self.arduino_inputs = {k:self.arduino.analog[p] for k,p in self.arduino_config["sensors_pins"].items()}
+		for pin in self.arduino_inputs.values(): pin.enable_reporting()
+
+		# start board iteration?
+		it = util.Iterator(self.arduino)
+		it.start()
 
 	def read_arduino_inputs(self):
 		return {k: pin.read() for k,pin in self.arduino_inputs.items()}

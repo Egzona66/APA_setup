@@ -10,16 +10,17 @@ from camera.camera import Camera
 from serial_com.comms import SerialComm
 from utils.file_io_utils import *
 
-import analysis
+from analysis import Analyzer
+from live_plotting import Plotter
 
-class Main(Camera, SerialComm):
+class Main(Camera, SerialComm, Analyzer, Plotter):
     overwrite_files = True # ! ATTENTION: this is useful for debug but could lead to overwriting experimental data
 
     # ? General options
     acquisition_framerate = 100  # fps of camera triggering -> NEED TO SPECIFY SLEEP TIME IN ARDUINO for frame triggering
     com_port = "COM5"  # port of the arduino running Firmata for data acquisition
 
-    experiment_folder = "E:\\Egzona"   # ? This should be changed for everyexperiment to avoid overwriting 
+    experiment_folder = "E:\\Egzona\\190701_M_1R_EM"   # ? This should be changed for everyexperiment to avoid overwriting 
     experiment_name = "test"  # should be something like YYMMDD_MOUSEID, all files for an experiment will start with this name
 
     # Camera Setup Options
@@ -54,18 +55,25 @@ class Main(Camera, SerialComm):
     arduino_config = {
         "sensors_pins": {
             # Specify the pins receiving the input from the sensors
-            "fr": 3, # Currently the inputs from the force sensors go to digital pins on the arduino board
-            "fl": 4,
-            "hr": 5, 
+            "fr": 0, # Currently the inputs from the force sensors go to digital pins on the arduino board
+            "fl": 2,
+            "hr": 4, 
             "hl": 6,
         },
-        "arduino_csv_headers": ["frame_number", "elapsed", "camera_timestamp", "fr", "fl", "hr", "hl"]
+        "arduino_csv_headers": ["frame_number", "elapsed", "camera_timestamp", "fr", "fl", "hr", "hl"],
+        "sensors": [ "fr", "fl", "hr", "hl"],
+        "plot_colors": { "fr":"m", 
+                        "fl":"b", 
+                        "hr":"g", 
+                        "hl":"r"}
     }
 
 
     def __init__(self):
         Camera.__init__(self)
         SerialComm.__init__(self)
+        Plotter.__init__(self)
+
 
     def setup_experiment_files(self):
         # Takes care of creating a folder to keep the files of this experiment
@@ -111,8 +119,12 @@ class Main(Camera, SerialComm):
         except (KeyboardInterrupt, ValueError):
             print("\n\n\nTerminating experiment. Acquired {} frames in {}s".format(self.frame_count, time.time()-self.exp_start_time/1000))
             
-            # ? for debug porpuses
-            analysis.plot_frame_delays()
+            Analyzer.__init__(self)
+
+            self.plot_frame_delays()
+            self.plot_sensors_traces()
+            self.show()
+            
 
 
         # ? code below is to have camera and arduino run in parallel on separate threads, not necessary for now
