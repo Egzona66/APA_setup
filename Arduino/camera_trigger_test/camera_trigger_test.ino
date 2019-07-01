@@ -10,9 +10,9 @@ void setup() {
 void loop() {
   digitalWrite(pinCam1, HIGH);
   digitalWrite(pinCam2, HIGH);
-  delay(1);
+  delay(5);
   
   digitalWrite(pinCam1, LOW);
   digitalWrite(pinCam2, LOW);
-  delay(1);
+  delay(5);
 }

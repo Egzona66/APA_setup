@@ -11,39 +11,44 @@ from camera import Camera
 
 
 class CameraTest(Camera):
+    acquisition_framerate = 100
+
     # Camera Setup Options
     camera_config = {
         "save_to_video": True,
         "video_format": ".mp4",
-        "save_folder": "F:\\Egzona", # where you want to save the file
-        "file_name": "python_camera",
+        "save_folder": "E:\\Egzona", # where you want to save the file
+        "file_name": "Test",
         "outputdict":{
             '-vcodec': 'mpeg4',  # ! high fps low res
             # "-vcodec": "libx264",   # ! low fps high res
             '-crf': '0',
             '-preset': 'slow',  # TODO check this
             '-pix_fmt': 'yuvj444p',
-            "-framerate": "10", # ! output video framerate 
+            #"-framerate": "10000", # ! output video framerate 
             # TODO this doesnt work FPS
         },
-
         "n_cameras": 2,
         "timeout": 100,   # frame acquisition timeout
 
-        "trigger_mode":True,  # hardware triggering
+        "trigger_mode": False,  # hardware triggering
         "acquisition": {    # ? acquisition params  
             # ! if you want to be able to specify these params differently for the different cameraas
             # ask Federico
             "exposure": "5000",
-            "frame_width": "960",  # must be a multiple of 32
-            "frame_height": "960", # must be a multiple of 32
-            "gain": "10"
+            "frame_width": "1216",  # must be a multiple of 32
+            "frame_height": "1024", # must be a multiple of 32
+            "gain": "10",
+            "frame_offset_y": "170",
         }
 
     }
 
+    #def input(Camera):
+       # ffmpeg -i input.mp4 -r 24 output.mp4
+
     # ? camera testing options
-    n_frames_test = 1500
+    n_frames_test = 500
 
     def __init__(self):
         Camera.__init__(self)
