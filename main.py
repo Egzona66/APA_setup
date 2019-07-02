@@ -10,71 +10,16 @@ from camera.camera import Camera
 from serial_com.comms import SerialComm
 from utils.file_io_utils import *
 
-from analysis import Analyzer
-from live_plotting import Plotter
+from analysis.analysis import Analyzer
+from analysis.live_plotting import LivePlotter
+from config import Config
 
-class Main(Camera, SerialComm, Analyzer, Plotter):
-    overwrite_files = False # ! ATTENTION: this is useful for debug but could lead to overwriting experimental data
-
-    # ? General options
-    acquisition_framerate = 100  # fps of camera triggering -> NEED TO SPECIFY SLEEP TIME IN ARDUINO for frame triggering
-    com_port = "COM5"  # port of the arduino running Firmata for data acquisition
-
-    experiment_folder = "E:\\Egzona"   # ? This should be changed for everyexperiment to avoid overwriting 
-    experiment_name = "test_ground"  # should be something like YYMMDD_MOUSEID, all files for an experiment will start with this name
-
-    # Camera Setup Options
-    camera_config = {
-        "save_to_video": False,
-        "video_format": ".mp4",
-        "n_cameras": 2,
-        "timeout": 100,   # frame acquisition timeout
-
-        "live_display": True,  # show the video frames as video is acquired
-
-        # ? Trigger mode and acquisition options
-        "trigger_mode": True,  # hardware triggering
-        "acquisition": {    
-            "exposure": "5000",
-            "frame_width": "1216",  # must be a multiple of 32
-            "frame_height": "1024", # must be a multiple of 32
-            "gain": "10",
-            "frame_offset_y": "170",
-        },
-
-        "outputdict":{ # for ffmpeg
-            '-vcodec': 'mpeg4',  # ! high fps low res
-            # "-vcodec": "libx264",   # ! low fps high res
-            '-crf': '0',
-            '-preset': 'slow',  # TODO check this
-            '-pix_fmt': 'yuvj444p',
-            #"-framerate": "10000", # ! output video framerate 
-            # TODO this doesnt work FPS
-        },
-    }
-
-    # Arduino (FIRMATA) setup options
-    arduino_config = {
-        "sensors_pins": {
-            # Specify the pins receiving the input from the sensors
-            "fr": 0, # Currently the inputs from the force sensors go to digital pins on the arduino board
-            "fl": 2,
-            "hr": 4, 
-            "hl": 6,
-        },
-        "arduino_csv_headers": ["frame_number", "elapsed", "camera_timestamp", "fr", "fl", "hr", "hl"],
-        "sensors": [ "fr", "fl", "hr", "hl"],
-        "plot_colors": { "fr":"m", 
-                        "fl":"b", 
-                        "hr":"g", 
-                        "hl":"r"}
-    }
-
-
+class Main(Camera, SerialComm, Analyzer, Plotter, Config):
     def __init__(self):
+        Config.__init__(self)  # load the config paramaters
         Camera.__init__(self)
         SerialComm.__init__(self)
-        Plotter.__init__(self)
+        LivePlotter.__init__(self)
 
 
     def setup_experiment_files(self):
@@ -113,11 +58,15 @@ class Main(Camera, SerialComm, Analyzer, Plotter):
         self.connect_firmata()
         self.setup_pins()
 
+        # Start live plotting 
+        if self.live_plotting:
+            self.initialise_sensors_plot()
+
         # Start streaming videos
         self.exp_start_time = time.time() * 1000 #  experiment starting time in milliseconds
 
         try:
-            self.stream_videos()
+            self.stream_videos() # <- t
         except (KeyboardInterrupt, ValueError):
             print("\n\n\nTerminating experiment. Acquired {} frames in {}s".format(self.frame_count, time.time()-self.exp_start_time/1000))
             
@@ -127,42 +76,18 @@ class Main(Camera, SerialComm, Analyzer, Plotter):
 
             # Plot stuff
             Analyzer.__init__(self)
+            self.check_number_frames() # check that the number of frames is correct
 
             self.plot_frame_delays()
-            self.plot_sensors_traces()
-            self.show()
+            self.plot_sensors_traces_fancy()
+
+            self.save_figs()
+            self.show() # this block python until you close the plot windows
             
 
-
-        # ? code below is to have camera and arduino run in parallel on separate threads, not necessary for now
-        """
-            # set up arduino camera pulses on a separate thread
-            Thread(target=self.camera_triggers).start()
-
-            # set up cameras video streaming on a separate thrad
-            Thread(target=self.stream_videos).start()
-                
-            try: 
-                # start all threads and join them
-                for t in self.parallel_processes: t.start()
-                for t in self.parallel_processes: t.join()
-                for t in self.parallel_processes: t.lock()
-
-            except (KeyboardInterrupt, SystemExit):
-                # print '\n! Received keyboard interrupt, quitting threads.\n'
-                sys.exit()
-                # for t in self.parallel_processes: t.stop()
-        """
-
-        
-
+    
 
 if __name__ == "__main__":
     m = Main()
     m.setup_experiment_files()
     m.start_experiment()
-
-    # m.start_cameras()
-    # m.stream_videos()
-
-    # m.conneFLUSBVGA-1.1.323.0ct_serial()

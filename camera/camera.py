@@ -84,7 +84,7 @@ class Camera():
             # ! if you want to extract timestamps for the frames: https://github.com/basler/pypylon/blob/master/samples/grabchunkimage.py
 
     def stream_videos(self, max_frames=None, debug=False):
-            display = self.camera_config["live_display"]
+            display = self.live_display
 
             if debug:
                 delta_t = [[] for i in range(self.camera_config["n_cameras"])]
@@ -141,7 +141,11 @@ class Camera():
                             prev_t[i] = now
 
                     # Read the state of the arduino pins and save to file
-                    self.read_arduino_write_to_file(grab.TimeStamp)
+                    sensor_states = self.read_arduino_write_to_file(grab.TimeStamp)
+
+                    # If live plotting, add the data and then update plots
+                    self.append_sensors_data(sensor_states)
+                    self.update_sensors_data()
 
                     # Update frame count and terminate
                     self.frame_count += 1
@@ -160,7 +164,7 @@ class Camera():
                 return delta_t
 
     def close_pylon_windows(self):
-        if self.camera_config["live_display"]:
+        if self.live_display:
             for window in self.pylon_windows:
                 window.Close()
 

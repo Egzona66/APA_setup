@@ -48,12 +48,12 @@ class SerialComm:
 	def connect_firmata(self):
 		print("Connecting to arduino... ")
 		self.arduino = Arduino(self.com_port)
-		# self.arduino.samplingOn(1000 / rate)
-
 		print("			... connected")
 
 	def camera_triggers(self):
-		# TODO Keep track of how many triggers were generated, the ITI and print the number of triggers vs number of frames in Camera
+		# ? Old function to generate camera triggers through firmata. Now obsolete because we are using a dedicare arduino for it
+		# it doenst really work, lots of gitter between triggers
+
 		self.n_arduino_triggers = 0
 
 		# Given the desired acquisition framerate, compute the sleep intervals
@@ -86,10 +86,10 @@ class SerialComm:
 			# time.sleep(sleep)
 			self.arduino.pass_time(sleep)
 
-
 			self.n_arduino_triggers += 1
 
 	def read_serial(self, expected=5):
+		# Stream bytes through serial connections to arduino, WIP and not really working as desired
 		self.serial.flushInput()
 		self.serial.flushOutput()
 
@@ -122,10 +122,15 @@ class SerialComm:
 		return {k: pin.read() for k,pin in self.arduino_inputs.items()}
 
 	def read_arduino_write_to_file(self, camera_timestamp):
+		# Read the state of the arduino inputs and append it to the .csv file with the experimental data
 		states = self.read_arduino_inputs()
+		sensor_states = states.copy() #keep a clean copy
+
 		states["frame_number"] = self.frame_count
 		now = time.time() * 1000
 		states["elapsed"] = now - self.exp_start_time
 		states["camera_timestamp"] = camera_timestamp
 
 		append_csv_file(self.arduino_inputs_file, states, self.arduino_config["arduino_csv_headers"])
+
+		return sensor_states
