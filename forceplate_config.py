@@ -7,8 +7,8 @@ class Config:
         ############## EXPERIMENT CONFIG  ####################
     """
     # ! Change these for every recording
-    experiment_folder = "E:\\Egzona\\190702_nunu"   # ? This should be changed for everyexperiment to avoid overwriting 
-    experiment_name = "190702_nunu1"  # should be something like YYMMDD_MOUSEID, all files for an experiment will start with this name
+    experiment_folder = "E:\\Egzona\\190702_M1L"   # ? This should be changed for everyexperiment to avoid overwriting 
+    experiment_name = "190702_nohighpassfilter"  # should be something like YYMMDD_MOUSEID, all files for an experiment will start with this name
 
     # * Live video frames display and sensors data plotting
     live_display = True,  # show the video frames as video is acquired
@@ -27,12 +27,27 @@ class Config:
         ############## POST-HOC ANALYSIS  ####################
     """
     analysis_config = {
-        "data_folder": "E:\\Egzona", # where the data to analyse are stored
-        "experiment_name": "test_ground",
+        "data_folder": "E:\\Egzona\\190702_M1L", # where the data to analyse are stored
+        "experiment_name": "190702_nohighpassfilter",
         "plot_colors": { "fr":"m", 
                         "fl":"b", 
                         "hr":"g", 
-                        "hl":"r"}
+                        "hl":"r"},
+
+        # * for composite video
+        "start_clip_time_s": 1, # ? Create clips start at this point, in SECONDS
+        "start_clip_time_frame": None, # ? Create clips start at this point, in FRAMES
+        "clip_n_frames": 8000, # duration of the clip in frames
+
+        "outputdict":{ # for ffmpeg
+                    # '-vcodec': 'mpeg4',  #  high fps low res
+                    "-vcodec": "libx264",   #   low fps high res
+                    '-crf': '0',
+                    '-preset': 'slow',  # TODO check this
+                    '-pix_fmt': 'yuvj444p',
+                    "-framerate": "100", #   output video framerate 
+                    # TODO this doesnt work FPS
+                },
     }
 
 

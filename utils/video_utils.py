@@ -421,6 +421,10 @@ class Editor:
                 if frame_counter >= stop_after: break
 
     @staticmethod
+    def move_cv2cap_to_frame(cap, frame):
+        cap.set(1, frame)
+
+    @staticmethod
     def manual_video_inspect(videofilepath):
         """[loads a video and lets the user select manually which frames to show]
 
@@ -571,3 +575,8 @@ class Editor:
             
             if not ret: return None
             else: return frame
+
+
+if __name__ == "__main__":
+    editor = Editor()
+    editor.manual_video_inspect("E:\\Egzona\\190702_M1L\\composite.mp4")

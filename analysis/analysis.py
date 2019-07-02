@@ -13,6 +13,7 @@ from forceplate_config import Config
 
 
 from utils.file_io_utils import *
+from utils.analysis_utils import *
 
 
 class Analyzer(Config):
@@ -25,7 +26,7 @@ class Analyzer(Config):
             self.data = load_csv_file(self.arduino_inputs_file)
         else:
             Config.__init__(self)
-            arduino_file = os.path.join(self.analysis_config["data_folder"], self.analysis_config["experiment_name"])
+            arduino_file = os.path.join(self.analysis_config["data_folder"], self.analysis_config["experiment_name"]+"_analoginputs.csv")
             
             if not check_file_exists(arduino_file): raise FileExistsError("analysis file specified in config does not exist: {}".format(arduino_file))
             
@@ -130,19 +131,43 @@ class Analyzer(Config):
 
         self.figures[self.experiment_name+"_sensors_traces.png"] = f
 
+
+
     def plot_sensors_traces_fancy(self):
         f, ax = plt.subplots(figsize=(12, 10))
+        normalized = normalize_channel_data(self.data, self.arduino_config["sensors"])
 
         for ch, color in self.analysis_config["plot_colors"].items():
-            channel_data = self.data[ch].values
-            # x = np.linspace(0, len(channel_data), num=len(channel_data))
+            # channel_data = self.data[ch].values
+            channel_data = normalized[ch]
+
             x = np.arange(0, len(channel_data))
             ax.fill_between(x, 0, channel_data, color=color, label=ch, alpha=.3)
         
         ax.legend()
-        ax.set(title="Raw Force Sensor Data", xlabel="frames", ylabel="Volts")
+        ax.set(title="Raw Force Sensor Data", xlabel="frames", ylabel="Volts", facecolor=[.5, .5, .5])
 
         self.figures[self.experiment_name+"_sensors_traces_fancy.png"] = f
+
+
+    def plot_sensors_traces_fancy_separated(self):
+        f, axarr = plt.subplots(figsize=(12, 10), nrows=4, sharex=True, sharey=True)
+
+        normalized = normalize_channel_data(self.data, self.arduino_config["sensors"])
+
+        for i, (ch, color) in enumerate(self.analysis_config["plot_colors"].items()):
+            # channel_data = self.data[ch].values
+            channel_data = normalized[ch]
+
+            x = np.arange(0, len(channel_data))
+            axarr[i].fill_between(x, 0, channel_data, color=color, label=ch, alpha=.3)
+        
+            axarr[i].legend()
+            axarr[i].set(title="Raw Force Sensor Data", xlabel="frames", ylabel="Volts", facecolor=[.5, .5, .5], ylim=[0,1])
+
+        self.figures[self.experiment_name+"_sensors_traces_fancy.png"] = f
+
+
 
     def save_figs(self):
         for fname, f in self.figures.items():
@@ -155,5 +180,6 @@ class Analyzer(Config):
 
 
 if __name__ == "__main__":
-    analyzer = Analyzer()
-    analyzer.plot_sensors_traces()
+    analyzer = Analyzer(posthoc=True)
+    analyzer.plot_sensors_traces_fancy()
+    plt.show()
