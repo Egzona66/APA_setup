@@ -17,7 +17,8 @@ import time
 
 class Editor:
     def __init__(self):
-        self.paths = load_yaml('./paths.yml')
+        # self.paths = load_yaml('./paths.yml')
+        pass
 
     @staticmethod
     def save_clip(clip, folder, name, format, fps):

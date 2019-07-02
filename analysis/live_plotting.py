@@ -23,6 +23,10 @@ class Plotter:
             data.append(states[ch])
 
     def update_sensors_plot(self):
-        for ch, color in self.analysis_config.items():
-            pass
-            # TODO
+        for ch, color in self.analysis_config["plot_colors"].items():
+            self.sensors_live_ax.plot(self.sensors_live_data[ch], color=color)
+        plt.pause(0.00001)
+
+
+if __name__ == "__main__":
+    p = Plotter()

@@ -144,8 +144,11 @@ class Camera():
                     sensor_states = self.read_arduino_write_to_file(grab.TimeStamp)
 
                     # If live plotting, add the data and then update plots
-                    self.append_sensors_data(sensor_states)
-                    self.update_sensors_data()
+                    if self.live_plotting:
+                        self.append_sensors_data(sensor_states)
+                        try:
+                            self.update_sensors_plot()
+                        except: raise ValueError
 
                     # Update frame count and terminate
                     self.frame_count += 1

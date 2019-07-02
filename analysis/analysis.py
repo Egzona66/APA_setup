@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import warnings
 
 from utils.video_utils import Editor as VideoUtils
+from forceplate_config import Config
 
 
 from utils.file_io_utils import *
@@ -25,6 +26,9 @@ class Analyzer(Config):
         else:
             Config.__init__(self)
             arduino_file = os.path.join(self.analysis_config["data_folder"], self.analysis_config["experiment_name"])
+            
+            if not check_file_exists(arduino_file): raise FileExistsError("analysis file specified in config does not exist: {}".format(arduino_file))
+            
             self.data = load_csv_file(arduino_file)
 
         # Get video utils functions
@@ -38,8 +42,10 @@ class Analyzer(Config):
             #############   DATA QUALITY CONTROL FUNCTIONS
     """
 
-    def check_number_frames(self):
+    def check_number_frames(self):           
         # run this at the end of an experiment to check that the number of frames in the videos and csv files is correct
+
+        if not self.camera_config["save_to_video"]: return # we didnt save any video
 
         # number of rows in CSV file
         csv_frames = len(self.data) # length of the loaded data pd.DataFrame
@@ -54,28 +60,37 @@ class Analyzer(Config):
             fps.append(r)
 
         # Check if all the frame numbers are correct!
+        s1 = """
+            Frames recorded: {}
+            Frames in csv:   {}
+            Frames in vids:  {}, {}
+            
+            """.format(self.frame_count, csv_frames, nframes[0], nframes[1])
+
+        s2 = """
+            Acquisition framerate: {}
+            Videos framerates:      {}, {}
+            """.format(self.acquisition_framerate, fps[0], fps[1])
+
+
+
         if self.frame_count == csv_frames == nframes[0] == nframes[1]:
             # all good
             print("Number of frames is correct everywhere")
         else:
             warnings.warn("The number of frames is not the same everywhere!!!")
-            print("""
-            Frames recorded: {}
-            Frames in csv:   {}
-            Frames in vids:  {}, {}
-            
-            """.format(self.frame_count, csv_frames, nframes[0], nframes[1]))
+            print(s1)
 
         # Check if the fps of the videos saved is the same as what we would've liked
         if self.acquisition_framerate == fps[0] == fps[1]:
             # all good
             print("Videos where saved at: ", self.acquisition_framerate)
         else:
-            warnings.warn("The framerate of the saved videos is not the same as the acquisition framerate")
-            print("""
-            Acquisition framerate: {}
-            Videos framerates:      {}, {}
-            """.format(self.acquisition_framerate, fps[0], fps[1]))
+            warnings.warn(s2)
+
+        # Write outcome to log file
+        with open(os.path.join(self.experiment_folder, self.experiment_name+"_log.txt"), "w") as log:
+            log.writelines([s1, s2])
 
 
 
@@ -87,14 +102,14 @@ class Analyzer(Config):
         f, ax = plt.subplots(figsize=(12, 10))
 
         dt = np.diff(self.data.elapsed.values)
-        mean_dt, std_dt = np.mean(dt), np.std(dt)
+        mean_dt, std_dt = round(np.mean(dt), 2), round(np.std(dt), 2)
 
         ax.plot(dt, label="single frames")
         ax.axhline(mean_dt, color="r", lw=2, label="mean")
         ax.legend()
         ax.set(xlabel="frame number", ylabel="delta t ms", title="Frame ITI - {}ms +- {}ms".format(mean_dt, std_dt))
 
-        self.figures[self.analysis_config["experiment_name.png"]+"frames_deltaT"] = f
+        self.figures[self.experiment_name+"_frames_deltaT.png"] = f
 
     def plot_sensors_traces(self):
         f, axarr = plt.subplots(nrows=2, sharex=True, figsize=(12, 10))
@@ -113,26 +128,30 @@ class Analyzer(Config):
         axarr[0].set(title="Raw Force Sensor Data", xlabel="frames", ylabel="Volts")
         axarr[1].set(title="Normalized Force Sensor Data", xlabel="frames", ylabel="Volts")
 
-        self.figures[self.analysis_config["experiment_name"]+"sensors_traces.png"] = f
+        self.figures[self.experiment_name+"_sensors_traces.png"] = f
 
     def plot_sensors_traces_fancy(self):
         f, ax = plt.subplots(figsize=(12, 10))
 
         for ch, color in self.analysis_config["plot_colors"].items():
             channel_data = self.data[ch].values
-            x = np.linspace(0, channel_data, num=channel_data)
-            ax.fill(x, channel_data, color=color, label=ch)
-
+            # x = np.linspace(0, len(channel_data), num=len(channel_data))
+            x = np.arange(0, len(channel_data))
+            ax.fill_between(x, 0, channel_data, color=color, label=ch, alpha=.3)
+        
+        ax.legend()
         ax.set(title="Raw Force Sensor Data", xlabel="frames", ylabel="Volts")
 
-        self.figures[self.analysis_config["experiment_name"]+"sensors_traces_fancy.png"] = f
+        self.figures[self.experiment_name+"_sensors_traces_fancy.png"] = f
 
     def save_figs(self):
         for fname, f in self.figures.items():
-            f.savefig(os.path.join(self.analysis_config["experiment_name.png"], fname))
+            print("Saving: ", os.path.join(self.analysis_config["data_folder"], fname))
+            f.savefig(os.path.join(self.experiment_folder, fname))
 
     def show(self):
-        plt.show()
+        try: plt.show()
+        except KeyboardInterrupt: pass
 
 
 if __name__ == "__main__":

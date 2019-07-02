@@ -11,10 +11,10 @@ from serial_com.comms import SerialComm
 from utils.file_io_utils import *
 
 from analysis.analysis import Analyzer
-from analysis.live_plotting import LivePlotter
-from config import Config
+from analysis.live_plotting import Plotter as LivePlotter
+from forceplate_config import Config
 
-class Main(Camera, SerialComm, Analyzer, Plotter, Config):
+class Main(Camera, SerialComm, Analyzer, LivePlotter, Config):
     def __init__(self):
         Config.__init__(self)  # load the config paramaters
         Camera.__init__(self)
@@ -35,7 +35,7 @@ class Main(Camera, SerialComm, Analyzer, Plotter, Config):
 
         # Create files for videos
         if self.camera_config["save_to_video"]:
-            self.video_files_names = [os.path.join(self.experiment_folder, self.experiment_name+"_cam{}_{}".format(i, self.camera_config["video_format"])) for i in np.arange(self.camera_config["n_cameras"])]
+            self.video_files_names = [os.path.join(self.experiment_folder, self.experiment_name+"_cam{}{}".format(i, self.camera_config["video_format"])) for i in np.arange(self.camera_config["n_cameras"])]
 
             # Check if they exist already
             for vid in self.video_files_names:

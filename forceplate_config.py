@@ -6,13 +6,13 @@ class Config:
     """
         ############## EXPERIMENT CONFIG  ####################
     """
-    # * Change these for every recording
-    experiment_folder = "E:\\Egzona"   # ? This should be changed for everyexperiment to avoid overwriting 
-    experiment_name = "test_ground"  # should be something like YYMMDD_MOUSEID, all files for an experiment will start with this name
+    # ! Change these for every recording
+    experiment_folder = "E:\\Egzona\\190702_nunu"   # ? This should be changed for everyexperiment to avoid overwriting 
+    experiment_name = "190702_nunu1"  # should be something like YYMMDD_MOUSEID, all files for an experiment will start with this name
 
     # * Live video frames display and sensors data plotting
     live_display = True,  # show the video frames as video is acquired
-    live_plotting = True
+    live_plotting = False
 
     # * Check that these options are correct
     com_port = "COM5"  # port of the arduino running Firmata for data acquisition
@@ -20,7 +20,6 @@ class Config:
 
 
     overwrite_files = False # ! ATTENTION: this is useful for debug but could lead to overwriting experimental data
-    acquisition_framerate = 100  # fps of camera triggering -> NEED TO SPECIFY SLEEP TIME IN ARDUINO for frame triggerin.
     # So this number is just indicative but the true acquisition rate depends on the trigger arduino
 
 
@@ -52,7 +51,7 @@ class Config:
     # * These options should not be changed frequently unless  something changes in the experiment set up
 
     camera_config = {
-        "save_to_video": False,
+        "save_to_video": True,
         "video_format": ".mp4",
         "n_cameras": 2,
         "timeout": 100,   # frame acquisition timeout
@@ -75,7 +74,7 @@ class Config:
             '-crf': '0',
             '-preset': 'slow',  # TODO check this
             '-pix_fmt': 'yuvj444p',
-            #"-framerate": "10000", #   output video framerate 
+            "-framerate": "100", #   output video framerate 
             # TODO this doesnt work FPS
         },
     }
