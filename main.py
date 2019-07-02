@@ -14,21 +14,23 @@ from analysis import Analyzer
 from live_plotting import Plotter
 
 class Main(Camera, SerialComm, Analyzer, Plotter):
-    overwrite_files = True # ! ATTENTION: this is useful for debug but could lead to overwriting experimental data
+    overwrite_files = False # ! ATTENTION: this is useful for debug but could lead to overwriting experimental data
 
     # ? General options
     acquisition_framerate = 100  # fps of camera triggering -> NEED TO SPECIFY SLEEP TIME IN ARDUINO for frame triggering
     com_port = "COM5"  # port of the arduino running Firmata for data acquisition
 
-    experiment_folder = "E:\\Egzona\\190701_M_1R_EM"   # ? This should be changed for everyexperiment to avoid overwriting 
-    experiment_name = "test"  # should be something like YYMMDD_MOUSEID, all files for an experiment will start with this name
+    experiment_folder = "E:\\Egzona"   # ? This should be changed for everyexperiment to avoid overwriting 
+    experiment_name = "test_ground"  # should be something like YYMMDD_MOUSEID, all files for an experiment will start with this name
 
     # Camera Setup Options
     camera_config = {
-        "save_to_video": True,
+        "save_to_video": False,
         "video_format": ".mp4",
         "n_cameras": 2,
         "timeout": 100,   # frame acquisition timeout
+
+        "live_display": True,  # show the video frames as video is acquired
 
         # ? Trigger mode and acquisition options
         "trigger_mode": True,  # hardware triggering
@@ -119,6 +121,11 @@ class Main(Camera, SerialComm, Analyzer, Plotter):
         except (KeyboardInterrupt, ValueError):
             print("\n\n\nTerminating experiment. Acquired {} frames in {}s".format(self.frame_count, time.time()-self.exp_start_time/1000))
             
+            # Close pylon windows and ffmpeg writers
+            self.close_pylon_windows()
+            self.close_ffmpeg_writers()
+
+            # Plot stuff
             Analyzer.__init__(self)
 
             self.plot_frame_delays()

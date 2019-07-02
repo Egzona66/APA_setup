@@ -7,6 +7,7 @@ import time
 import os
 import matplotlib.pyplot as plt
 
+plt.ioff()
 
 from utils.file_io_utils import *
 

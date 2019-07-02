@@ -83,13 +83,17 @@ class Camera():
 
             # ! if you want to extract timestamps for the frames: https://github.com/basler/pypylon/blob/master/samples/grabchunkimage.py
 
-    def stream_videos(self, max_frames=None, debug=False, display=True):
+    def stream_videos(self, max_frames=None, debug=False):
+            display = self.camera_config["live_display"]
+
             if debug:
                 delta_t = [[] for i in range(self.camera_config["n_cameras"])]
                 prev_t = [time.time() for i in range(self.camera_config["n_cameras"])]
 
-            image_windows = [pylon.PylonImageWindow() for i in self.cameras]
-            for i, window in enumerate(image_windows): window.Create(i)
+            if display:
+                image_windows = [pylon.PylonImageWindow() for i in self.cameras]
+                self.pylon_windows = image_windows
+                for i, window in enumerate(image_windows): window.Create(i)
             
             #self.grab.GrabSucceeded is false when a camera doesnt get a frame
             while True:
@@ -154,6 +158,18 @@ class Camera():
 
             if debug:
                 return delta_t
+
+    def close_pylon_windows(self):
+        if self.camera_config["live_display"]:
+            for window in self.pylon_windows:
+                window.Close()
+
+    def close_ffmpeg_writers(self):
+        if self.camera_config["save_to_video"]: 
+            for writer in self.cam_writers.values():
+                writer.close()
+
+    # def close
 
 
 if __name__ == "__main__":
