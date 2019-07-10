@@ -83,83 +83,86 @@ class Camera():
 
             # ! if you want to extract timestamps for the frames: https://github.com/basler/pypylon/blob/master/samples/grabchunkimage.py
 
-    def stream_videos(self, max_frames=None, debug=False):
-            if debug:
-                delta_t = [[] for i in range(self.camera_config["n_cameras"])]
-                prev_t = [time.time() for i in range(self.camera_config["n_cameras"])]
+    def print_current_fps(self, start):
+        now = time.time()
+        elapsed = now - start
+        start = now
+
+        # Given that we did 100 frames in elapsedtime, what was the framerate
+        time_per_frame = (elapsed / 100) * 1000
+        fps = round(1000  / time_per_frame, 2) 
+        
+        print("Tot frames: {}, current fps: {}, desired fps {}.".format(
+                    self.frame_count, fps, self.acquisition_framerate))
+        return start
+
+    def grab_frames(self):
+        for i, (writer, cam) in enumerate(zip(self.cam_writers.values(), self.cameras)): 
+            try:
+                grab = cam.RetrieveResult(self.camera_config["timeout"])
+            except:
+                raise ValueError("Grab failed")
+
+            if not grab.GrabSucceeded():
+                break
+            else:
+                if self.save_to_video:
+                    writer.writeFrame(grab.Array)
+                pass
 
             if self.live_display:
-                image_windows = [pylon.PylonImageWindow() for i in self.cameras]
-                self.pylon_windows = image_windows
-                for i, window in enumerate(image_windows): window.Create(i)
-            
-            #self.grab.GrabSucceeded is false when a camera doesnt get a frame
-            while True:
-                try:
-                    if self.frame_count % 100 == 0: 
-                        # Print the FPS in the last 100 frames
-                        if self.frame_count == 0: start = time.time()
-                        else:
-                            now = time.time()
-                            elapsed = now - start
-                            start = now
+                image_windows[i].SetImage(grab)
+                image_windows[i].Show()
+        return grab
 
-                            # Given that we did 100 frames in elapsedtime, what was the framerate
-                            time_per_frame = (elapsed / 100) * 1000
-                            fps = round(1000  / time_per_frame, 2) 
-                            
-                            print("Tot frames: {}, current fps: {}, desired fps {}.".format(
-                                        self.frame_count, fps, self.acquisition_framerate))
 
-                    # ! Loop over each camera and get frames
-                    for i, (writer, cam) in enumerate(zip(self.cam_writers.values(), self.cameras)): 
-                        try:
-                            grab = cam.RetrieveResult(self.camera_config["timeout"])
-                        except:
-                            raise ValueError("Grab failed")
+    def stream_videos(self, max_frames=None):
+        # Set up display windows
+        if self.live_display:
+            image_windows = [pylon.PylonImageWindow() for i in self.cameras]
+            self.pylon_windows = image_windows
+            for i, window in enumerate(image_windows): window.Create(i)
+        
+        # ? Keep looping to acquire frames
+        # self.grab.GrabSucceeded is false when a camera doesnt get a frame -> exit the loop
+        while True:
+            try:
+                if self.frame_count % 100 == 0:  # Print the FPS in the last 100 frames
+                    if self.frame_count == 0: start = time.time()
+                    else: start = self.print_current_fps(start)
 
-                        if not grab.GrabSucceeded():
-                            break
-                        else:
-                            if self.save_to_video:
-                                writer.writeFrame(grab.Array)
-                            pass
+                # ! Loop over each camera and get frames
+                grab = self.grab_frames()
 
-                        if self.live_display:
-                            image_windows[i].SetImage(grab)
-                            image_windows[i].Show()
+                # Read the state of the arduino pins and save to file
+                sensor_states = self.read_arduino_write_to_file(grab.TimeStamp)
 
-                        if debug:
-                            now = time.time()
-                            deltat = now-prev_t[i]
-                            delta_t[i].append(deltat*1000)
-                            prev_t[i] = now
+                # If live plotting, add the data and then update plots
+                if self.live_plotting:
+                    self.append_sensors_data(sensor_states)
+                    try:
+                        self.update_sensors_plot()
+                    except: raise ValueError("Could not append live sensor data during live plotting")
 
-                    # Read the state of the arduino pins and save to file
-                    sensor_states = self.read_arduino_write_to_file(grab.TimeStamp)
+                # Update frame count and terminate
+                self.frame_count += 1
 
-                    # If live plotting, add the data and then update plots
-                    if self.live_plotting:
-                        self.append_sensors_data(sensor_states)
-                        try:
-                            self.update_sensors_plot()
-                        except: raise ValueError("Could not append live sensor data during live plotting")
+                # Stop if reached max frames
+                if max_frames is not None:
+                        if self.frame_count >= max_frames: break
 
-                    # Update frame count and terminate
-                    self.frame_count += 1
+                # stop if enough time has elapsed
+                if self.experiment_duration is not None:
+                    if time.time() - self.exp_start_time/1000 > self.experiment_duration: 
+                        print("Terminating acquisition - reached max time")
+                        raise KeyboardInterrupt("terminating") # need to raise an error here to be cached in main
 
-                    if max_frames is not None:
-                            if self.frame_count >= max_frames: break
+            except pylon.TimeoutException as e:
+                print("Pylon timeout Exception")
+                raise ValueError("Could not grab frame within timeout")
 
-                except pylon.TimeoutException as e:
-                    print("Pylon timeout Exception")
-                    raise ValueError("Could not grab frame within timeout")
-
-            # Close camera
-            for cam in self.cameras: cam.Close()
-
-            if debug:
-                return delta_t
+        # Close camera
+        for cam in self.cameras: cam.Close()
 
     def close_pylon_windows(self):
         if self.live_display:

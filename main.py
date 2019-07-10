@@ -46,6 +46,7 @@ class Main(Camera, SerialComm, Analyzer, LivePlotter, Config):
         if check_file_exists(self.arduino_inputs_file) and not self.overwrite_files: raise FileExistsError("Cannot overwrite analog inputs file: ", self.arduino_inputs_file)
         create_csv_file(self.arduino_inputs_file, self.arduino_config["arduino_csv_headers"])
 
+
     def terminate_experiment(self):
         """
             This function gets called when the user interrupts the execution of the experiments.
