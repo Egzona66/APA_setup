@@ -35,7 +35,7 @@ class Camera():
 
     def get_camera_writers(self):
         # Open FFMPEG camera writers if we are saving to video
-        if self.camera_config["save_to_video"]: 
+        if self.save_to_video: 
             for i, file_name in enumerate(self.video_files_names):
                 print("Writing to: {}".format(file_name))
                 self.cam_writers[i] = skvideo.io.FFmpegWriter(file_name, outputdict=self.camera_config["outputdict"])
@@ -72,8 +72,8 @@ class Camera():
 
                 # ! Settings to make sure framerate is correct
                 # https://github.com/basler/pypylon/blob/master/samples/grab.py
-                cam.OutputQueueSize = 1
-                cam.MaxNumBuffer = 3 # Default is 10
+                cam.OutputQueueSize = 10
+                cam.MaxNumBuffer = 10 # Default is 10
             else:
                 cam.TriggerMode.FromString("Off")
 
@@ -84,13 +84,11 @@ class Camera():
             # ! if you want to extract timestamps for the frames: https://github.com/basler/pypylon/blob/master/samples/grabchunkimage.py
 
     def stream_videos(self, max_frames=None, debug=False):
-            display = self.live_display
-
             if debug:
                 delta_t = [[] for i in range(self.camera_config["n_cameras"])]
                 prev_t = [time.time() for i in range(self.camera_config["n_cameras"])]
 
-            if display:
+            if self.live_display:
                 image_windows = [pylon.PylonImageWindow() for i in self.cameras]
                 self.pylon_windows = image_windows
                 for i, window in enumerate(image_windows): window.Create(i)
@@ -113,24 +111,21 @@ class Camera():
                             print("Tot frames: {}, current fps: {}, desired fps {}.".format(
                                         self.frame_count, fps, self.acquisition_framerate))
 
-                    # Loop over each camera and get frames
-                    # grab = self.cameras.RetrieveResult(self.camera_config["timeout"])  # ? it doesnt work
+                    # ! Loop over each camera and get frames
                     for i, (writer, cam) in enumerate(zip(self.cam_writers.values(), self.cameras)): 
-                        
                         try:
                             grab = cam.RetrieveResult(self.camera_config["timeout"])
                         except:
-                            raise ValueError
+                            raise ValueError("Grab failed")
 
                         if not grab.GrabSucceeded():
                             break
                         else:
-                            # ! writer is disabled
-                            if self.camera_config["save_to_video"]:
+                            if self.save_to_video:
                                 writer.writeFrame(grab.Array)
                             pass
 
-                        if display and self.frame_count % 1 == 0:
+                        if self.live_display:
                             image_windows[i].SetImage(grab)
                             image_windows[i].Show()
 
@@ -148,7 +143,7 @@ class Camera():
                         self.append_sensors_data(sensor_states)
                         try:
                             self.update_sensors_plot()
-                        except: raise ValueError
+                        except: raise ValueError("Could not append live sensor data during live plotting")
 
                     # Update frame count and terminate
                     self.frame_count += 1
@@ -157,8 +152,8 @@ class Camera():
                             if self.frame_count >= max_frames: break
 
                 except pylon.TimeoutException as e:
-                    print(e)
-                    sys.exit()
+                    print("Pylon timeout Exception")
+                    raise ValueError("Could not grab frame within timeout")
 
             # Close camera
             for cam in self.cameras: cam.Close()
@@ -172,7 +167,7 @@ class Camera():
                 window.Close()
 
     def close_ffmpeg_writers(self):
-        if self.camera_config["save_to_video"]: 
+        if self.save_to_video: 
             for writer in self.cam_writers.values():
                 writer.close()
 

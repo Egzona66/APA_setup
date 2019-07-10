@@ -7,11 +7,11 @@ class Config:
         ############## EXPERIMENT CONFIG  ####################
     """
     # ! Change these for every recording
-    experiment_folder = "E:\\Egzona\\190702_M1L"   # ? This should be changed for everyexperiment to avoid overwriting 
-    experiment_name = "190702_nohighpassfilter"  # should be something like YYMMDD_MOUSEID, all files for an experiment will start with this name
+    experiment_folder = "E:\\Egzona\\test"   # ? This should be changed for everyexperiment to avoid overwriting 
+    experiment_name = "test"  # should be something like YYMMDD_MOUSEID, all files for an experiment will start with this name
 
     # * Live video frames display and sensors data plotting
-    live_display = True,  # show the video frames as video is acquired
+    live_display = False  # show the video frames as video is acquired
     live_plotting = False
 
     # * Check that these options are correct
@@ -22,13 +22,15 @@ class Config:
     overwrite_files = False # ! ATTENTION: this is useful for debug but could lead to overwriting experimental data
     # So this number is just indicative but the true acquisition rate depends on the trigger arduino
 
+    save_to_video = True  # ! decide if you want to save the videos or not
+
 
     """
         ############## POST-HOC ANALYSIS  ####################
     """
     analysis_config = {
-        "data_folder": "E:\\Egzona\\190702_M1L", # where the data to analyse are stored
-        "experiment_name": "190702_nohighpassfilter",
+        "data_folder": "E:\\Egzona\\100719", # where the data to analyse are stored
+        "experiment_name": "100719_Mnone",
         "plot_colors": { "fr":"m", 
                         "fl":"b", 
                         "hr":"g", 
@@ -66,7 +68,6 @@ class Config:
     # * These options should not be changed frequently unless  something changes in the experiment set up
 
     camera_config = {
-        "save_to_video": True,
         "video_format": ".mp4",
         "n_cameras": 2,
         "timeout": 100,   # frame acquisition timeout

@@ -46,7 +46,7 @@ class Analyzer(Config):
     def check_number_frames(self):           
         # run this at the end of an experiment to check that the number of frames in the videos and csv files is correct
 
-        if not self.camera_config["save_to_video"]: return # we didnt save any video
+        if not self.save_to_video: return # we didnt save any video
 
         # number of rows in CSV file
         csv_frames = len(self.data) # length of the loaded data pd.DataFrame
@@ -62,15 +62,15 @@ class Analyzer(Config):
 
         # Check if all the frame numbers are correct!
         s1 = """
-            Frames recorded: {}
-            Frames in csv:   {}
-            Frames in vids:  {}, {}
+Frames recorded: {}
+Frames in csv:   {}
+Frames in vids:  {}, {}
             
             """.format(self.frame_count, csv_frames, nframes[0], nframes[1])
 
         s2 = """
-            Acquisition framerate: {}
-            Videos framerates:      {}, {}
+Acquisition framerate: {}
+Videos framerates:      {}, {}
             """.format(self.acquisition_framerate, fps[0], fps[1])
 
 
@@ -79,7 +79,7 @@ class Analyzer(Config):
             # all good
             print("Number of frames is correct everywhere")
         else:
-            warnings.warn("The number of frames is not the same everywhere!!!")
+            # warnings.warn("The number of frames is not the same everywhere!!!")
             print(s1)
 
         # Check if the fps of the videos saved is the same as what we would've liked
@@ -87,7 +87,8 @@ class Analyzer(Config):
             # all good
             print("Videos where saved at: ", self.acquisition_framerate)
         else:
-            warnings.warn(s2)
+            # warnings.warn(s2)
+            pass
 
         # Write outcome to log file
         with open(os.path.join(self.experiment_folder, self.experiment_name+"_log.txt"), "w") as log:
@@ -100,16 +101,26 @@ class Analyzer(Config):
     """
 
     def plot_frame_delays(self):
-        f, ax = plt.subplots(figsize=(12, 10))
+        f, axarr = plt.subplots(figsize=(12, 10), ncols=2)
 
-        dt = np.diff(self.data.elapsed.values)
+        try:
+            dt = np.diff(self.data.elapsed.values)
+        except:
+            print("could not print frame delays")
+            return
         mean_dt, std_dt = round(np.mean(dt), 2), round(np.std(dt), 2)
 
-        ax.plot(dt, label="single frames")
-        ax.axhline(mean_dt, color="r", lw=2, label="mean")
-        ax.legend()
-        ax.set(xlabel="frame number", ylabel="delta t ms", title="Frame ITI - {}ms +- {}ms".format(mean_dt, std_dt))
+        axarr[0].plot(dt, label="frames - elapsed")
+        axarr[0].axhline(mean_dt, color="r", lw=2, label="mean")
+        axarr[0].legend()
+        axarr[0].set(xlabel="frame number", ylabel="delta t ms", title="Frame ITI - {}ms +- {}ms".format(mean_dt, std_dt))
 
+        camera_dt = np.diff(self.data.camera_timestamp.values)
+
+        axarr[1].plot(camera_dt, label="frames - camera time")
+        axarr[1].axhline(np.mean(camera_dt), color="r", lw=2, label="mean")
+        axarr[1].legend()
+        axarr[1].set(xlabel="frame number", ylabel="delta t", title="Frame ITI")
         self.figures[self.experiment_name+"_frames_deltaT.png"] = f
 
     def plot_sensors_traces(self):
@@ -181,5 +192,7 @@ class Analyzer(Config):
 
 if __name__ == "__main__":
     analyzer = Analyzer(posthoc=True)
+    analyzer.plot_frame_delays()
     analyzer.plot_sensors_traces_fancy()
+    analyzer.plot_sensors_traces_fancy_separated()
     plt.show()

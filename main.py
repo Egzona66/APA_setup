@@ -34,7 +34,7 @@ class Main(Camera, SerialComm, Analyzer, LivePlotter, Config):
             print("\n\n!!! experiment folder is not empty, might risk overwriting stuff !!!\n\n")
 
         # Create files for videos
-        if self.camera_config["save_to_video"]:
+        if self.save_to_video:
             self.video_files_names = [os.path.join(self.experiment_folder, self.experiment_name+"_cam{}{}".format(i, self.camera_config["video_format"])) for i in np.arange(self.camera_config["n_cameras"])]
 
             # Check if they exist already
@@ -46,6 +46,32 @@ class Main(Camera, SerialComm, Analyzer, LivePlotter, Config):
         if check_file_exists(self.arduino_inputs_file) and not self.overwrite_files: raise FileExistsError("Cannot overwrite analog inputs file: ", self.arduino_inputs_file)
         create_csv_file(self.arduino_inputs_file, self.arduino_config["arduino_csv_headers"])
 
+    def terminate_experiment(self):
+        """
+            This function gets called when the user interrupts the execution of the experiments.
+            It takes care of printing a summary, plotting stuff, closing the ffmpeg writers etc etc
+        """
+        exp_duration = round(time.time()-self.exp_start_time/1000, 2)
+        print("""\n\n\nTerminating experiment. Acquired {} frames in {}s.
+                {}s / {}fps -> {} frames, 
+                {} frames acquired, actual framerate: {}""".format(self.frame_count, exp_duration, exp_duration, 
+                self.acquisition_framerate, int(exp_duration * self.acquisition_framerate), self.frame_count, round(self.frame_count / exp_duration, 2)))
+            
+        # Close pylon windows and ffmpeg writers
+        self.close_pylon_windows()
+        self.close_ffmpeg_writers()
+
+        # Plot stuff
+        Analyzer.__init__(self)
+        self.check_number_frames() # check that the number of frames is correct
+
+        self.plot_frame_delays()
+        self.plot_sensors_traces_fancy()
+        self.plot_sensors_traces_fancy_separated()
+
+        self.save_figs()
+        self.show() # this block python until you close the plot windows
+        
 
 
     def start_experiment(self):
@@ -67,23 +93,10 @@ class Main(Camera, SerialComm, Analyzer, LivePlotter, Config):
 
         try:
             self.stream_videos() # <- t
-        except (KeyboardInterrupt, ValueError):
-            print("\n\n\nTerminating experiment. Acquired {} frames in {}s".format(self.frame_count, time.time()-self.exp_start_time/1000))
-            
-            # Close pylon windows and ffmpeg writers
-            self.close_pylon_windows()
-            self.close_ffmpeg_writers()
+        except (KeyboardInterrupt, ValueError) as e:
+            print("Acquisition terminted with error: ", e)
+            self.terminate_experiment()
 
-            # Plot stuff
-            Analyzer.__init__(self)
-            self.check_number_frames() # check that the number of frames is correct
-
-            self.plot_frame_delays()
-            self.plot_sensors_traces_fancy()
-
-            self.save_figs()
-            self.show() # this block python until you close the plot windows
-            
 
     
 
