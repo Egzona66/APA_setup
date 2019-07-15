@@ -124,7 +124,7 @@ Videos framerates:      {}, {}
         self.figures[self.experiment_name+"_frames_deltaT.png"] = f
 
 
-    def plot_sensors_traces(self, multiple_axes=True, normalized=False, frames_range=None, figname=None):
+    def plot_sensors_traces(self, shaded=True, multiple_axes=True, normalized=False, frames_range=None, figname=None):
         """[Plots the sensor traces from an experiment as specified. Which experiment to plot is specified in forceplate_config under analysis_config]
         
         Keyword Arguments:
@@ -152,12 +152,15 @@ Videos framerates:      {}, {}
 
             x = np.arange(0, len(channel_data))
             if multiple_axes:
-                axarr[i].fill_between(x, 0, channel_data, color=color, label=ch, alpha=.3)
-                axarr[i].legend()
-                axarr[i].set(title="Raw Force Sensor Data", xlabel="frames", ylabel="Volts", facecolor=[.5, .5, .5], ylim=[0,1])
-            else: 
-                ax.fill_between(x, 0, channel_data, color=color, label=ch, alpha=.3)
-                ax.legend()
+                ax = axarr[1]
+                ax.set(title="Sensor:{}".format(ch), xlabel="frames", ylabel="Volts", facecolor=[.5, .5, .5], ylim=[0,1])
+        
+            if shaded: ax.fill_between(x, 0, channel_data, color=color, label=ch, alpha=.3)
+            else: ax.plot(channel_data, color=color, lw=2, label=ch)
+            
+        if not multipl_axes:
+            ax.legend()
+            ax.set(title="Raw Force Sensor Data", xlabel="frames", ylabel="Volts", facecolor=[.5, .5, .5], ylim=[0,1])
 
         if figname is None: figname = sensors_traces_fancy
         self.figures[self.experiment_name+"_{}.png".format(figname)] = f
@@ -190,6 +193,6 @@ if __name__ == "__main__":
         >>> plt.show()
     """
     
-    analyzer.plot_sensors_traces(multiple_axes=True, normalized=False, frames_range=[100, 200], figname="nunuplot")
+    analyzer.plot_sensors_traces(shaded=False, multiple_axes=True, normalized=False, frames_range=[100, 200], figname="nunuplot")
     analyzer.save_figs()
     plt.show()
