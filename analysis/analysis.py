@@ -123,60 +123,44 @@ Videos framerates:      {}, {}
         axarr[1].set(xlabel="frame number", ylabel="delta t", title="Frame ITI")
         self.figures[self.experiment_name+"_frames_deltaT.png"] = f
 
-    def plot_sensors_traces(self):
-        f, axarr = plt.subplots(nrows=2, sharex=True, figsize=(12, 10))
 
-        try:
-            normalized = {ch: self.data[ch].values / np.nanmean(self.data[ch].values) for ch in self.arduino_config["sensors"]}
-        except: # cant normalise if mean of channel is zero
-            normalized = None
-    
-        # plot raw and normalized
-        for ch, color in self.analysis_config["plot_colors"].items():
-            axarr[0].plot(self.data[ch], color=color, label=ch)
-            if normalized is not None: axarr[1].plot(normalized[ch], color=color, label=ch)
-
-        for ax in axarr: ax.legend()
-        axarr[0].set(title="Raw Force Sensor Data", xlabel="frames", ylabel="Volts")
-        axarr[1].set(title="Normalized Force Sensor Data", xlabel="frames", ylabel="Volts")
-
-        self.figures[self.experiment_name+"_sensors_traces.png"] = f
-
-
-
-    def plot_sensors_traces_fancy(self):
-        f, ax = plt.subplots(figsize=(12, 10))
-        normalized = normalize_channel_data(self.data, self.arduino_config["sensors"])
-
-        for ch, color in self.analysis_config["plot_colors"].items():
-            # channel_data = self.data[ch].values
-            channel_data = normalized[ch]
-
-            x = np.arange(0, len(channel_data))
-            ax.fill_between(x, 0, channel_data, color=color, label=ch, alpha=.3)
+    def plot_sensors_traces(self, multiple_axes=True, normalized=False, frames_range=None, figname=None):
+        """[Plots the sensor traces from an experiment as specified. Which experiment to plot is specified in forceplate_config under analysis_config]
         
-        ax.legend()
-        ax.set(title="Raw Force Sensor Data", xlabel="frames", ylabel="Volts", facecolor=[.5, .5, .5])
-
-        self.figures[self.experiment_name+"_sensors_traces_fancy.png"] = f
-
-
-    def plot_sensors_traces_fancy_separated(self):
-        f, axarr = plt.subplots(figsize=(12, 10), nrows=4, sharex=True, sharey=True)
+        Keyword Arguments:
+            multiple_axes {bool} -- [Split the traces from all sensors on individual axes or plot them on a single axis] (default: {True})
+            normalized {bool} -- [Plot the normalised (0-1) data or the raw data] (default: {False})
+            frames_range {[list]} -- [optional, only plot the sensor data in a specific range.] (default: {None})
+            figname {[str]} -- [optional, name to add to the figure for saving.] (default: {None})
+        """
+        if multiple_axes:
+            f, axarr = plt.subplots(figsize=(12, 10), nrows=4, sharex=True, sharey=True)
+        else: 
+            f, ax = plt.subplots(figsize=(12, 10))
+            ax.set(title="Raw Force Sensor Data", xlabel="frames", ylabel="Volts", facecolor=[.5, .5, .5])
 
         normalized = normalize_channel_data(self.data, self.arduino_config["sensors"])
 
         for i, (ch, color) in enumerate(self.analysis_config["plot_colors"].items()):
-            # channel_data = self.data[ch].values
-            channel_data = normalized[ch]
+            if not normalized:
+                channel_data = self.data[ch].values
+            else:
+                channel_data = normalized[ch]
+
+            if frames_range is not None:
+                channel_data = channel_data[frames_range[0]:frames_range[1]]
 
             x = np.arange(0, len(channel_data))
-            axarr[i].fill_between(x, 0, channel_data, color=color, label=ch, alpha=.3)
-        
-            axarr[i].legend()
-            axarr[i].set(title="Raw Force Sensor Data", xlabel="frames", ylabel="Volts", facecolor=[.5, .5, .5], ylim=[0,1])
+            if multiple_axes:
+                axarr[i].fill_between(x, 0, channel_data, color=color, label=ch, alpha=.3)
+                axarr[i].legend()
+                axarr[i].set(title="Raw Force Sensor Data", xlabel="frames", ylabel="Volts", facecolor=[.5, .5, .5], ylim=[0,1])
+            else: 
+                ax.fill_between(x, 0, channel_data, color=color, label=ch, alpha=.3)
+                ax.legend()
 
-        self.figures[self.experiment_name+"_sensors_traces_fancy.png"] = f
+        if figname is None: figname = sensors_traces_fancy
+        self.figures[self.experiment_name+"_{}.png".format(figname)] = f
 
 
 
@@ -192,7 +176,20 @@ Videos framerates:      {}, {}
 
 if __name__ == "__main__":
     analyzer = Analyzer(posthoc=True)
-    analyzer.plot_frame_delays()
-    analyzer.plot_sensors_traces_fancy()
-    analyzer.plot_sensors_traces_fancy_separated()
+    
+    # ? To specify which experiment to analyze, specify "data_folder" and "experiment_name" in "analysis_config" in -> forceplate_config.py
+    # ? See function definition for more details about what the attributes do 
+    """
+        Example call to analyzer.plot_sensor_traces with each channel on a separate plot, showing the raw data for frames [100 - 200] 
+        and giving the figure the name "nunuplot". The figure is then saved in the experiment folder with the figurename
+
+        >>> analyzer.plot_sensors_traces(multiple_axes=True, normalized=False, frames_range=[100, 200], figname="nunuplot")
+        >>> analyzer.save_figs()
+
+        Then if you want to display the figure
+        >>> plt.show()
+    """
+    
+    analyzer.plot_sensors_traces(multiple_axes=True, normalized=False, frames_range=[100, 200], figname="nunuplot")
+    analyzer.save_figs()
     plt.show()
