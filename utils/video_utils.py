@@ -579,4 +579,4 @@ class Editor:
 
 if __name__ == "__main__":
     editor = Editor()
-    editor.manual_video_inspect("E:\\Egzona\\190702_M1L\\composite.mp4")
+    editor.manual_video_inspect("E:\\Egzona\\100719\\100719_M1L_cam0.mp4")

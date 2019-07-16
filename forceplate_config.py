@@ -17,7 +17,7 @@ class Config:
 
     # * Check that these options are correct
     com_port = "COM5"  # port of the arduino running Firmata for data acquisition
-    acquisition_framerate = 100  # fps of camera triggering -> NEED TO SPECIFY SLEEP TIME IN ARDUINO for frame triggering
+    acquisition_framerate = 200  # fps of camera triggering -> NEED TO SPECIFY SLEEP TIME IN ARDUINO for frame triggering
 
 
     overwrite_files = False # ! ATTENTION: this is useful for debug but could lead to overwriting experimental data
@@ -31,7 +31,7 @@ class Config:
     """
     analysis_config = {
         "data_folder": "E:\\Egzona\\100719", # where the data to analyse are stored
-        "experiment_name": "100719_Mnone",
+        "experiment_name": "100719_M1R",
         "plot_colors": { "fr":"m", 
                         "fl":"b", 
                         "hr":"g", 
@@ -79,10 +79,11 @@ class Config:
         "trigger_mode": True,  # hardware triggering
         "acquisition": {    
             "exposure": "5000",
-            "frame_width": "1216",  # must be a multiple of 32
-            "frame_height": "1024", # must be a multiple of 32
+            "frame_width": "480",  # must be a multiple of 32
+            "frame_height": "320", # must be a multiple of 32
             "gain": "10",
-            "frame_offset_y": "170",
+            "frame_offset_y": "536",
+            "frame_offset_x": "672",
         },
 
         "outputdict":{ # for ffmpeg

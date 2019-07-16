@@ -158,7 +158,7 @@ Videos framerates:      {}, {}
             if shaded: ax.fill_between(x, 0, channel_data, color=color, label=ch, alpha=.3)
             else: ax.plot(channel_data, color=color, lw=2, label=ch)
             
-        if not multipl_axes:
+        if not multiple_axes:
             ax.legend()
             ax.set(title="Raw Force Sensor Data", xlabel="frames", ylabel="Volts", facecolor=[.5, .5, .5], ylim=[0,1])
 
@@ -193,6 +193,6 @@ if __name__ == "__main__":
         >>> plt.show()
     """
     
-    analyzer.plot_sensors_traces(shaded=False, multiple_axes=True, normalized=False, frames_range=[100, 200], figname="nunuplot")
+    analyzer.plot_sensors_traces(shaded=False, multiple_axes=False, normalized=False, frames_range=[3694, 3708], figname="nunuplot")
     analyzer.save_figs()
     plt.show()
