@@ -162,7 +162,7 @@ Videos framerates:      {}, {}
             ax.legend()
             ax.set(title="Raw Force Sensor Data", xlabel="frames", ylabel="Volts", facecolor=[.5, .5, .5], ylim=[0,1])
 
-        if figname is None: figname = sensors_traces_fancy
+        if figname is None: figname = "sensors_traces"
         self.figures[self.experiment_name+"_{}.png".format(figname)] = f
 
 

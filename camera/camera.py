@@ -56,9 +56,9 @@ class Camera():
             cam.ExposureTime.FromString(self.camera_config["acquisition"]["exposure"])
             cam.Width.FromString(self.camera_config["acquisition"]["frame_width"])
             cam.Height.FromString(self.camera_config["acquisition"]["frame_height"])
-            cam.Height.FromString(self.camera_config["acquisition"]["frame_height"])
             cam.Gain.FromString(self.camera_config["acquisition"]["gain"])
             cam.OffsetY.FromString(self.camera_config["acquisition"]["frame_offset_y"])
+            # if int(self.camera_config["acquisition"]["frame_offset_x"]) > 0:
             cam.OffsetX.FromString(self.camera_config["acquisition"]["frame_offset_x"])
 
             # ? Trigger mode set up

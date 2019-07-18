@@ -67,8 +67,8 @@ class Main(Camera, SerialComm, Analyzer, LivePlotter, Config):
         self.check_number_frames() # check that the number of frames is correct
 
         self.plot_frame_delays()
-        self.plot_sensors_traces_fancy()
-        self.plot_sensors_traces_fancy_separated()
+        self.plot_sensors_traces()
+        
 
         self.save_figs()
         self.show() # this block python until you close the plot windows
@@ -78,7 +78,7 @@ class Main(Camera, SerialComm, Analyzer, LivePlotter, Config):
     def start_experiment(self):
         self.parallel_processes = [] # store all the parallel processes
 
-        # Start cameras and set them up
+        # Start cameras and set them up`
         self.start_cameras()
 
         # Start the arduino connection

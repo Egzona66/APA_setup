@@ -11,6 +11,7 @@ import warnings
 import cv2
 import skvideo.io
 from tqdm import tqdm
+import matplotlib.patches as patches
 
 
 from utils.video_utils import Editor as VideoUtils
@@ -66,7 +67,7 @@ class VideoAnalysis(Config, VideoUtils):
         # ! Which folder is being processed is specified in forceplate_config under analysis_config
 
         # Load data and open videos
-        csv_file, video_files = parse_folder_files(self.analysis_config["data_folder"])
+        csv_file, video_files = parse_folder_files(self.analysis_config["data_folder"], self.analysis_config["experiment_name"])
         self.data = load_csv_file(csv_file)
         normalized = normalize_channel_data(self.data, self.arduino_config["sensors"])
 
@@ -77,19 +78,9 @@ class VideoAnalysis(Config, VideoUtils):
         video_params = {k:(self.get_video_params(cap)) for k,cap in caps.items()}
         fps = video_params["cam0"][3]
 
-        # Create animated plot video
-        # self.animated_plot(fps) 
-        # ? doesnt work
-
-        # Get output clip size and open cv2 videowriter
-        # width = video_params["cam0"][1] + video_params["cam1"][1]
-        # height = video_params["cam0"][2] + video_params["cam1"][2] + sensors_plot_height
-        # dest_filepath = os.path.join(self.analysis_config["data_folder"], "composite_video.mp4")
-        # cvwriter = self.open_cvwriter(dest_filepath, w=width, h=height, framerate=fps, iscolor=True)
-
         # Get ffmpeg video writer
         ffmpeg_dict = self.analysis_config["outputdict"]
-        ffmpegwriter = skvideo.io.FFmpegWriter(os.path.join(self.analysis_config["data_folder"], "composite.mp4"), 
+        ffmpegwriter = skvideo.io.FFmpegWriter(os.path.join(self.analysis_config["data_folder"], "{}_{}.mp4".format(self.analysis_config["experiment_name"], self.analysis_config["clip_name"])), 
                                                         outputdict=ffmpeg_dict)
 
         # Get clip start time
@@ -110,36 +101,71 @@ class VideoAnalysis(Config, VideoUtils):
         for framen in tqdm(np.arange(start_frame, start_frame+self.analysis_config["clip_n_frames"])):
             # Create a figure and save it then close it
             f = plt.figure(figsize=(16, 12), facecolor=[.1, .1, .1])
-            ax0 = plt.subplot2grid((2, 2), (0, 0), colspan=1)
-            ax1 = plt.subplot2grid((2, 2), (0, 1), colspan=1)
-            ax2 = plt.subplot2grid((2, 2), (1, 0), colspan=2)
+            ax0 = plt.subplot2grid((2, 3), (0, 0), colspan=1)
+            ax1 = plt.subplot2grid((2, 3), (0, 1), colspan=1)
+            ax2 = plt.subplot2grid((2, 3), (1, 0), colspan=2)
+            sensorsax = plt.subplot2grid((2, 3), (0, 2), colspan=1, facecolor=[.2, .2, .2])
+            gax = plt.subplot2grid((2, 3), (1, 2), colspan=1, facecolor=[.2, .2, .2])
+
+            # TODO make channel data appear into the future instead of diasappear into the past
 
             # Plot frames
-            ret, frame = caps["cam0"].read()
-            ax0.imshow(frame)
-            ret, frame = caps["cam1"].read()
-            ax1.imshow(frame[:, ::-1])
+            ret, frame0 = caps["cam0"].read()
+            ret, frame1 = caps["cam1"].read()
+
+            if not ret: raise FileNotFoundError(video_files)
+
+            ax0.imshow(frame0)
+            ax1.imshow(frame1[::-1, ::-1])
 
             # Plot sensors traces
             data_range = [int(framen), int(framen+plot_datapoints)]
+            channel_rectangles_coords = {"hl":(-1, -1), "fr":(0, 0), "fl":(-1, 0), "hr":(0, -1)}
+            allc = {}
             for ch, color in self.analysis_config["plot_colors"].items():
                 channel_data = normalized[ch][data_range[0]:data_range[1]]
+                allc[ch] = channel_data
 
-                # x = np.linspace(0, len(channel_data), num=len(channel_data))
                 x = np.arange(0, len(channel_data))
-                ax2.fill_between(x, 0, channel_data, color=color, label=ch, alpha=.3)
+                # ax2.fill_between(x, 0, channel_data, color=color, label=ch, alpha=.3)
+                ax2.plot(x, channel_data, color=color, label=ch, alpha=.8, lw=5)
 
+                # Plot sensors states
+                if channel_data[0] < 0:
+                    a = 0
+                else:
+                    a =channel_data[0]
+                fact = 2
+                if a < 0 or a*fact > 1: 
+                    raise ValueError("a: ", a , "factpr ", fact, "alpha", a*fact)
+                rect = patches.Rectangle(channel_rectangles_coords[ch], 1, 1, linewidth=1, edgecolor=color,facecolor=color, alpha=a*fact)
+                sensorsax.add_patch(rect)
+
+            # Plot the centre of gravity for the next n frames
+            x_pos = (allc["fr"]+allc["hr"]) - (allc["fl"]+allc["hl"])
+            y_pos = (allc["fr"]+allc["fl"]) - (allc["hr"]+allc["hl"])
+
+            gax.plot(x_pos, y_pos, alpha=.1, color="w", lw=1)
+            gax.scatter(x_pos, y_pos, alpha=.5, cmap="Reds", c=np.arange(len(y_pos)))
+            gax.scatter(x_pos[0], y_pos[0], s=100, color="g")
+            gax.axvline(0, color="w", ls=":", lw=.5)
+            gax.axhline(0, color="w", ls=":", lw=.5)
+
+            # Set axes properties
+            ax1.set(xticks=[], yticks=[])
+            ax0.set(xticks=[], yticks=[])
             ax2.legend()
             ax2.set(title="Raw Force Sensor Data", xlabel="frames", ylabel="Volts", facecolor=[.2, .2, .2], ylim=[0, 1])
 
-            ax1.set(xticks=[], yticks=[])
-            ax0.set(xticks=[], yticks=[])
+            sensorsax.set(xlim=[-1, 1], ylim=[-1, 1])
+            gax.set(xlim=[-1, 1], ylim=[-1, 1])
 
             # convert figure to numpy array and save to video
             f.canvas.draw()
             img = np.array(f.canvas.renderer.buffer_rgba())
             ffmpegwriter.writeFrame(img)
             plt.close()
+
 
         # Close ffmpeg writer
         ffmpegwriter.close()

@@ -7,9 +7,9 @@ class Config:
         ############## EXPERIMENT CONFIG  ####################
     """
     # ! Change these for every recording
-    experiment_folder = "E:\\Egzona\\test"   # ? This should be changed for everyexperiment to avoid overwriting 
-    experiment_name = "test"  # should be something like YYMMDD_MOUSEID, all files for an experiment will start with this name
-    experiment_duration = 10*60  # acquisition duration in seconds, alternatively set as None
+    experiment_folder = "E:\\Egzona\\180719"   # ? This should be changed for everyexperiment to avoid overwriting 
+    experiment_name = "180719_M1R"  # should be something like YYMMDD_MOUSEID, all files for an experiment will start with this name
+    experiment_duration = 5*60  # acquisition duration in seconds, alternatively set as None
 
     # * Live video frames display and sensors data plotting
     live_display = False  # show the video frames as video is acquired
@@ -30,17 +30,19 @@ class Config:
         ############## POST-HOC ANALYSIS  ####################
     """
     analysis_config = {
-        "data_folder": "E:\\Egzona\\100719", # where the data to analyse are stored
-        "experiment_name": "100719_M1R",
+        "data_folder": "E:\\Egzona\\180719", # where the data to analyse are stored
+        "experiment_name": "180719_F1L",
         "plot_colors": { "fr":"m", 
                         "fl":"b", 
                         "hr":"g", 
                         "hl":"r"},
 
         # * for composite video
-        "start_clip_time_s": 1, # ? Create clips start at this point, in SECONDS
+        # ? run video_analysis.py
+        "start_clip_time_s": 1185, # ? Create clips start at this point, in SECONDS
         "start_clip_time_frame": None, # ? Create clips start at this point, in FRAMES
-        "clip_n_frames": 8000, # duration of the clip in frames
+        "clip_n_frames": 1000, # duration of the clip in frames
+        "clip_name":"apa_2", 
 
         "outputdict":{ # for ffmpeg
                     # '-vcodec': 'mpeg4',  #  high fps low res
@@ -78,12 +80,12 @@ class Config:
         # ? Trigger mode and acquisition options -> needed for constant framerate
         "trigger_mode": True,  # hardware triggering
         "acquisition": {    
-            "exposure": "5000",
+            "exposure": "1000",
             "frame_width": "480",  # must be a multiple of 32
             "frame_height": "320", # must be a multiple of 32
-            "gain": "10",
-            "frame_offset_y": "536",
-            "frame_offset_x": "672",
+            "gain": "12",
+            "frame_offset_y": "544",
+            "frame_offset_x": "704",
         },
 
         "outputdict":{ # for ffmpeg
