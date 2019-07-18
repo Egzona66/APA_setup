@@ -5,16 +5,14 @@ import pandas as pd
 import numpy as np
 import time
 import os
-import matplotlib.pyplot as plt
 import warnings
 
-from utils.video_utils import Editor as VideoUtils
 from forceplate_config import Config
-
 
 from utils.file_io_utils import *
 from utils.analysis_utils import *
-
+from utils.video_utils import Editor as VideoUtils
+from utils.matplotlib_config import *
 
 class Analyzer(Config):
     def __init__(self, posthoc=False):
