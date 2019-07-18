@@ -63,8 +63,9 @@ class Analyzer(Config):
 Frames recorded: {}
 Frames in csv:   {}
 Frames in vids:  {}, {}
-            
-            """.format(self.frame_count, csv_frames, nframes[0], nframes[1])
+Fps vids:        {}, {}
+    
+            """.format(self.frame_count, csv_frames, nframes[0], nframes[1], fps[0], fps[1]) 
 
         s2 = """
 Acquisition framerate: {}

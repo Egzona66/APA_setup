@@ -20,6 +20,10 @@ from forceplate_config import Config
 
 from utils.file_io_utils import *
 from utils.analysis_utils import *
+from utils.video_utils import Editor as VideoUtils
+from utils.matplotlib_config import *
+from utils.plotting_utils import *
+from utils.constants import *
 
 class VideoAnalysis(Config, VideoUtils):
     def __init__(self):
@@ -97,17 +101,18 @@ class VideoAnalysis(Config, VideoUtils):
         frames_folder = os.path.join(self.analysis_config["data_folder"], "frames")
         check_create_folder(frames_folder)
 
+        f = plt.figure()
+
         # Start looping over frames
         for framen in tqdm(np.arange(start_frame, start_frame+self.analysis_config["clip_n_frames"])):
+            framen = int(framen)
             # Create a figure and save it then close it
-            f = plt.figure(figsize=(16, 12), facecolor=[.1, .1, .1])
             ax0 = plt.subplot2grid((2, 3), (0, 0), colspan=1)
             ax1 = plt.subplot2grid((2, 3), (0, 1), colspan=1)
             ax2 = plt.subplot2grid((2, 3), (1, 0), colspan=2)
             sensorsax = plt.subplot2grid((2, 3), (0, 2), colspan=1, facecolor=[.2, .2, .2])
             gax = plt.subplot2grid((2, 3), (1, 2), colspan=1, facecolor=[.2, .2, .2])
 
-            # TODO make channel data appear into the future instead of diasappear into the past
 
             # Plot frames
             ret, frame0 = caps["cam0"].read()
@@ -115,31 +120,40 @@ class VideoAnalysis(Config, VideoUtils):
 
             if not ret: raise FileNotFoundError(video_files)
 
-            ax0.imshow(frame0)
-            ax1.imshow(frame1[::-1, ::-1])
+            downsample = 5
+            ax0.imshow(frame0[::downsample,::downsample], interpolation="nearest")
+            ax1.imshow(frame1[::downsample,::downsample][::-1, ::-1], interpolation="nearest")
+
 
             # Plot sensors traces
             data_range = [int(framen), int(framen+plot_datapoints)]
             channel_rectangles_coords = {"hl":(-1, -1), "fr":(0, 0), "fl":(-1, 0), "hr":(0, -1)}
             allc = {}
             for ch, color in self.analysis_config["plot_colors"].items():
-                channel_data = normalized[ch][data_range[0]:data_range[1]]
-                allc[ch] = channel_data
+                channel_data = normalized[ch][data_range[0]-50:data_range[1]-50]
 
                 x = np.arange(0, len(channel_data))
                 # ax2.fill_between(x, 0, channel_data, color=color, label=ch, alpha=.3)
                 ax2.plot(x, channel_data, color=color, label=ch, alpha=.8, lw=5)
 
-                # Plot sensors states
+                # Plot sensors states as colored rectangles
+                channel_data = normalized[ch][data_range[0]:data_range[1]]
+                allc[ch] = channel_data
                 if channel_data[0] < 0:
                     a = 0
                 else:
                     a =channel_data[0]
                 fact = 2
                 if a < 0 or a*fact > 1: 
-                    raise ValueError("a: ", a , "factpr ", fact, "alpha", a*fact)
+                    raise ValueError("a: ", a , "factor ", fact, "alpha", a*fact)
                 rect = patches.Rectangle(channel_rectangles_coords[ch], 1, 1, linewidth=1, edgecolor=color,facecolor=color, alpha=a*fact)
                 sensorsax.add_patch(rect)
+            
+            # Decorate sensors ax
+            rect = patches.Rectangle([48, 0], 4, 1, linewidth=1, edgecolor=white, facecolor=white, alpha=.5)
+            ax2.add_patch(rect)
+            ax2.axvline(50, color=white, ls="--", lw=3, alpha=.3)
+
 
             # Plot the centre of gravity for the next n frames
             x_pos = (allc["fr"]+allc["hr"]) - (allc["fl"]+allc["hl"])
@@ -154,28 +168,23 @@ class VideoAnalysis(Config, VideoUtils):
             # Set axes properties
             ax1.set(xticks=[], yticks=[])
             ax0.set(xticks=[], yticks=[])
-            ax2.legend()
-            ax2.set(title="Raw Force Sensor Data", xlabel="frames", ylabel="Volts", facecolor=[.2, .2, .2], ylim=[0, 1])
+            style_legend(ax2)
+            ax2.set(xlabel="frames", ylabel="voltage", facecolor=[.2, .2, .2], ylim=[0, 1], xticks=[0, 25, 50, 75, 100], 
+                    xticklabels=[framen-50, framen-25, framen, framen+25, framen+50])
 
-            sensorsax.set(xlim=[-1, 1], ylim=[-1, 1])
-            gax.set(xlim=[-1, 1], ylim=[-1, 1])
+            sensorsax.set(xlim=[-1, 1], ylim=[-1, 1], xticks=[-1, -.5, 0, .5, 1], yticks=[-1, -.5, 0, .5, 1])
+            gax.set(xlim=[-1, 1], ylim=[-1, 1], xticks=[-1, -.5, 0, .5, 1], yticks=[-1, -.5, 0, .5, 1])
 
             # convert figure to numpy array and save to video
+            # f.draw()
             f.canvas.draw()
             img = np.array(f.canvas.renderer.buffer_rgba())
             ffmpegwriter.writeFrame(img)
-            plt.close()
+            # plt.close()
 
 
         # Close ffmpeg writer
         ffmpegwriter.close()
-
-        # TODO make Y axis fixed
-        # TODO x axis label for plo
-        # TODO frames titles
-        # TODO write in white
-
-
 
         
 

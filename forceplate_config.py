@@ -1,15 +1,15 @@
+from utils.constants import *
+
 
 # Define a config class with all the options for data acquisition and post-hoc analysis
-
-
 class Config:
     """
         ############## EXPERIMENT CONFIG  ####################
     """
     # ! Change these for every recording
-    experiment_folder = "E:\\Egzona\\180719"   # ? This should be changed for everyexperiment to avoid overwriting 
-    experiment_name = "180719_M1R"  # should be something like YYMMDD_MOUSEID, all files for an experiment will start with this name
-    experiment_duration = 5*60  # acquisition duration in seconds, alternatively set as None
+    experiment_folder = "E:\\Egzona\\test"   # ? This should be changed for everyexperiment to avoid overwriting 
+    experiment_name = "tes22t"  # should be something like YYMMDD_MOUSEID, all files for an experiment will start with this name
+    experiment_duration = 30  # acquisition duration in seconds, alternatively set as None
 
     # * Live video frames display and sensors data plotting
     live_display = False  # show the video frames as video is acquired
@@ -30,19 +30,19 @@ class Config:
         ############## POST-HOC ANALYSIS  ####################
     """
     analysis_config = {
-        "data_folder": "E:\\Egzona\\180719", # where the data to analyse are stored
-        "experiment_name": "180719_F1L",
-        "plot_colors": { "fr":"m", 
-                        "fl":"b", 
-                        "hr":"g", 
-                        "hl":"r"},
+        "data_folder": "E:\\Egzona\\test", # where the data to analyse are stored
+        "experiment_name": "tes22t",
+        "plot_colors": { "fr":magenta, 
+                        "fl":blue, 
+                        "hr":red, 
+                        "hl":green},
 
         # * for composite video
         # ? run video_analysis.py
-        "start_clip_time_s": 1185, # ? Create clips start at this point, in SECONDS
+        "start_clip_time_s": 1, # ? Create clips start at this point, in SECONDS
         "start_clip_time_frame": None, # ? Create clips start at this point, in FRAMES
-        "clip_n_frames": 1000, # duration of the clip in frames
-        "clip_name":"apa_2", 
+        "clip_n_frames": 50, # duration of the clip in frames
+        "clip_name":"apa_2test", 
 
         "outputdict":{ # for ffmpeg
                     # '-vcodec': 'mpeg4',  #  high fps low res
@@ -50,7 +50,7 @@ class Config:
                     '-crf': '0',
                     '-preset': 'slow',  # TODO check this
                     '-pix_fmt': 'yuvj444p',
-                    "-framerate": "100", #   output video framerate 
+                    "-framerate": "10", #   output video framerate 
                     # TODO this doesnt work FPS
                 },
     }
@@ -71,11 +71,9 @@ class Config:
     # * These options should not be changed frequently unless  something changes in the experiment set up
 
     camera_config = {
-        "video_format": ".mp4",
+        "video_format": ".avi",
         "n_cameras": 2,
         "timeout": 100,   # frame acquisition timeout
-
-        
 
         # ? Trigger mode and acquisition options -> needed for constant framerate
         "trigger_mode": True,  # hardware triggering
@@ -88,14 +86,20 @@ class Config:
             "frame_offset_x": "704",
         },
 
+
+        # all commands and options  https://gist.github.com/tayvano/6e2d456a9897f55025e25035478a3a50
+        # pixel formats https://ffmpeg.org/pipermail/ffmpeg-devel/2007-May/035617.html
+
         "outputdict":{ # for ffmpeg
-            '-vcodec': 'mpeg4',  #  high fps low res
-            # "-vcodec": "libx264",   #   low fps high res
+            "-vcodec": "mpeg4",   #   low fps high res
             '-crf': '0',
             '-preset': 'slow',  # TODO check this
-            '-pix_fmt': 'yuvj444p',
-            "-framerate": "100", #   output video framerate 
-            # TODO this doesnt work FPS
+            '-pix_fmt': 'gray',  # yuvj444p
+            "-cpu-used": "1",  # 0-8. defailt 1, higher leads to higher speed and lower quality
+            # "-r": "100", #   output video framerate 
+            "-flags":"gray",
+            # "-ab":"0",
+            # "-force_fps": "100"
         },
     }
 

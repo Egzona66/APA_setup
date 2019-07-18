@@ -2,33 +2,6 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 
-
-def get_bps_as_points_dict(frame_pose):
-    '''get_bps_as_points_dict [turns the pose pd.Series into a dictionary, easier to handle]
-    
-    Arguments:
-        frame_pose {[pd.Series]} -- [pose at one frame from DLC]
-    
-    Returns:
-        [dict] -- [dictionary of x,y position of each bodypart in the frame]
-    '''
-
-    # TODO add other variables (e.g. velocity...)
-    # TODO exclude/include body segments
-
-    names = []
-    pointsdict = {}
-    bodyparts = frame_pose.index.levels[1]
-    scorer = frame_pose.index.levels[0]
-    for bpname in bodyparts:
-        if bpname in names:  # dont take twice
-            continue
-        else:
-            names.append(bpname)
-            bp_pos = frame_pose[scorer[0], bpname]
-            pointsdict[bpname] = np.int32([bp_pos.x, bp_pos.y])
-    return pointsdict
-
 def save_all_open_figs(target_fld=False, name=False, format=False, exclude_number=False):
     open_figs = plt.get_fignums()
 
