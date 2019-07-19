@@ -120,7 +120,7 @@ class VideoAnalysis(Config, VideoUtils):
 
             if not ret: raise FileNotFoundError(video_files)
 
-            downsample = 5
+            downsample = 2
             ax0.imshow(frame0[::downsample,::downsample], interpolation="nearest")
             ax1.imshow(frame1[::downsample,::downsample][::-1, ::-1], interpolation="nearest")
 
