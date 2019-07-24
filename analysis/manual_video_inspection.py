@@ -6,7 +6,7 @@ from utils.video_utils import Editor as VideoUtils
 
 # ? To manually inspect a video frame by frame:
 # 1) Specify the path to the video you want to analyse
-vidoefile = "path to the video to inspect goes here"  # * <--- path to the video to analyse 
+
 # 2) Run this script
 
 class Inspector(Config, VideoUtils):
@@ -18,6 +18,7 @@ class Inspector(Config, VideoUtils):
 
 
 if __name__ == "__main__":
+    videofile = "Z:\\Egzona\\EM_Forceplate\\Egzona\\180719\\180719_Mnone_cam0.mp4"  # * <--- path to the video to analyse 
     inspector = Inspector(videofile)
 
 

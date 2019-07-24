@@ -64,9 +64,6 @@ class VideoAnalysis(Config, VideoUtils):
     def composite_video(self, start_time_in_secs=True, sensors_plot_height=200, plot_datapoints= 100):
         # plot_datapoints is the n of points for the sensors traces before the current frame to plot 
         # Creates a video with the view of two cameras and the data from the sensors scrolling underneat
-        
-        # TODO this is currently creating a figure for each frame and then stitching them together in a video file
-        # Imporve this shit
 
         # ! Which folder is being processed is specified in forceplate_config under analysis_config
 
@@ -74,6 +71,10 @@ class VideoAnalysis(Config, VideoUtils):
         csv_file, video_files = parse_folder_files(self.analysis_config["data_folder"], self.analysis_config["experiment_name"])
         self.data = load_csv_file(csv_file)
         normalized = normalize_channel_data(self.data, self.arduino_config["sensors"])
+
+        for k, f in video_files.items():
+            if not os.path.isfile(f):
+                raise  FileExistsError("videofile doesnt exist: {}".format(f))
 
         caps = {k: cv2.VideoCapture(f) for k,f in video_files.items()}
 
@@ -84,11 +85,13 @@ class VideoAnalysis(Config, VideoUtils):
 
         # Get ffmpeg video writer
         ffmpeg_dict = self.analysis_config["outputdict"]
-        ffmpegwriter = skvideo.io.FFmpegWriter(os.path.join(self.analysis_config["data_folder"], "{}_{}.mp4".format(self.analysis_config["experiment_name"], self.analysis_config["clip_name"])), 
-                                                        outputdict=ffmpeg_dict)
+        outputfile = os.path.join(self.analysis_config["data_folder"], "{}_{}.avi".format(self.analysis_config["experiment_name"], self.analysis_config["clip_name"]))
+        if os.path.isfile(outputfile): raise  FileExistsError("Could not overwrite file!!")
+        print("\n\n Saving video to: ", outputfile)
+        ffmpegwriter = skvideo.io.FFmpegWriter(outputfile, outputdict=ffmpeg_dict)
 
         # Get clip start time
-        if start_time_in_secs:
+        if self.analysis_config["start_clip_time_s"] is not None:
             start_s = self.analysis_config["start_clip_time_s"]
             start_frame = np.floor(start_s * fps)
         else:
@@ -98,8 +101,8 @@ class VideoAnalysis(Config, VideoUtils):
         for cap in caps.values(): self.move_cv2cap_to_frame(cap, start_frame)
 
         # get dest folder
-        frames_folder = os.path.join(self.analysis_config["data_folder"], "frames")
-        check_create_folder(frames_folder)
+        #frames_folder = os.path.join(self.analysis_config["data_folder"], "frames")
+        #check_create_folder(frames_folder)
 
         f = plt.figure()
 
@@ -118,7 +121,8 @@ class VideoAnalysis(Config, VideoUtils):
             ret, frame0 = caps["cam0"].read()
             ret, frame1 = caps["cam1"].read()
 
-            if not ret: raise FileNotFoundError(video_files)
+            if not ret: 
+                raise ValueError("Could not read frame number: {} from videos\n {}".format(framen, video_files))
 
             downsample = 2
             ax0.imshow(frame0[::downsample,::downsample], interpolation="nearest")
