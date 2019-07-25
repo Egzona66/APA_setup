@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import os
 import numpy as np
+import statsmodels.api as sm
 
 def save_all_open_figs(target_fld=False, name=False, format=False, exclude_number=False):
     open_figs = plt.get_fignums()
@@ -57,3 +58,9 @@ def ortholines(ax, orientations, values, color=[.7, .7, .7], lw=3, alpha=.5, ls=
             func = ax.vline
 
         func(v, color=[.7, .7, .7], lw=3, alpha=.5, ls="--", **kwargs)
+
+def fit_kde(x, **kwargs):
+    x = np.array(x).astype(np.float)
+    kde = sm.nonparametric.KDEUnivariate(x)
+    kde.fit(**kwargs) # Estimate the densities
+    return kde

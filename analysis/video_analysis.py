@@ -134,11 +134,13 @@ class VideoAnalysis(Config, VideoUtils):
             channel_rectangles_coords = {"hl":(-1, -1), "fr":(0, 0), "fl":(-1, 0), "hr":(0, -1)}
             allc = {}
             for ch, color in self.analysis_config["plot_colors"].items():
+                # Plot sensors traces as KDE
                 channel_data = normalized[ch][data_range[0]-50:data_range[1]-50]
 
-                x = np.arange(0, len(channel_data))
-                # ax2.fill_between(x, 0, channel_data, color=color, label=ch, alpha=.3)
-                ax2.plot(x, channel_data, color=color, label=ch, alpha=.8, lw=5)
+                kde = fit_kde(channel_data, bw=self.analysis_config["smoot_factor"])
+                ax.fill_between(kde.support, 0, kde.density, alpha=.15, color=color)
+                ax.plot(kde.support, kde.density, alpha=1, color=color)
+
 
                 # Plot sensors states as colored rectangles
                 channel_data = normalized[ch][data_range[0]:data_range[1]]
@@ -157,7 +159,6 @@ class VideoAnalysis(Config, VideoUtils):
             rect = patches.Rectangle([48, 0], 4, 1, linewidth=1, edgecolor=white, facecolor=white, alpha=.5)
             ax2.add_patch(rect)
             ax2.axvline(50, color=white, ls="--", lw=3, alpha=.3)
-
 
             # Plot the centre of gravity for the next n frames
             x_pos = (allc["fr"]+allc["hr"]) - (allc["fl"]+allc["hl"])

@@ -36,6 +36,7 @@ class Config:
                         "fl":blue, 
                         "hr":red, 
                         "hl":green},
+        "smoot_factor": 1,   # increase to make sensors traces smoother
 
         # * for composite video
         # ? run video_analysis.py
