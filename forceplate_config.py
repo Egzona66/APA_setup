@@ -30,20 +30,20 @@ class Config:
         ############## POST-HOC ANALYSIS  ####################
     """
     analysis_config = {
-        "data_folder": "D:\\Egzona\\190719\\Composite videos", # where the data to analyse are stored
-        "experiment_name": "190719_Mnone",
+        "data_folder": "D:\\Egzona\\180719", # where the data to analyse are stored
+        "experiment_name": "180719_Mnone",
         "plot_colors": { "fr":magenta, 
                         "fl":blue, 
                         "hr":red, 
                         "hl":green},
-        "smoot_factor": 1,   # increase to make sensors traces smoother
+        "smooth_factor": 1,   # increase to make sensors traces smoother
 
         # * for composite video
         # ? run video_analysis.py
         "start_clip_time_s": None, # ? Create clips start at this point, in SECONDS
-        "start_clip_time_frame": 22219, # ? Create clips start at this point, in FRAMES
-        "clip_n_frames": 70 , # duration of the clip in frames
-        "clip_name":"compositeBACK", 
+        "start_clip_time_frame": 10600, # ? Create clips start at this point, in FRAMES
+        "clip_n_frames": 100 , # duration of the clip in frames
+        "clip_name":"compositeTEST", 
 
         "outputdict":{ # for ffmpeg
                     # '-vcodec': 'mpeg4',  #  high fps low res

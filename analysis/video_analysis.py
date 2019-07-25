@@ -137,9 +137,9 @@ class VideoAnalysis(Config, VideoUtils):
                 # Plot sensors traces as KDE
                 channel_data = normalized[ch][data_range[0]-50:data_range[1]-50]
 
-                kde = fit_kde(channel_data, bw=self.analysis_config["smoot_factor"])
-                ax.fill_between(kde.support, 0, kde.density, alpha=.15, color=color)
-                ax.plot(kde.support, kde.density, alpha=1, color=color)
+                kde = fit_kde(channel_data, bw=self.analysis_config["smooth_factor"])
+                ax2.fill_between(kde.support, 0, kde.density, alpha=.15, color=color)
+                ax2.plot(kde.support, kde.density, alpha=1, color=color)
 
 
                 # Plot sensors states as colored rectangles
