@@ -72,6 +72,7 @@ for i, row in df.iterrows():
     else: 
         pass
      
+    xy,  = x[row.start:row.end], y[row.start:row.end]
 
     cg = np.vstack([x, y])
 
@@ -106,10 +107,11 @@ hlfrax = plt.subplot2grid(grid, (2, 2), colspan=2, rowspan=2)
 
 xs, ys, frs, hls = [], [], [], []
 for i, row in data.iterrows():
-    x, y = line_smoother(row.cg[row.start:row.end, 0], window_size=11), line_smoother(row.cg[row.start:row.end, 1], window_size=11)
-    # x, y = row.cg[row.start:row.end, 0]-row.cg[row.start, 0], row.cg[row.start:row.end, 1]-row.cg[row.start, 1]
+    print(i, row)
+    # x, y = line_smoother(row.cg[:, 0]-row.cg[0, 0], window_size=11), line_smoother(row.cg[:, 1]-row.cg[0, 1], window_size=11)
+    x, y = row.cg[:, 0]-row.cg[0, 0], row.cg[:, 1]-row.cg[0, 1]
     
-    fr, hl = line_smoother(row.fr[row.start:row.end], window_size=11), line_smoother(row.hl[row.start:row.end], window_size=11)
+    fr, hl = line_smoother(row.fr[:], window_size=11), line_smoother(row.hl[:], window_size=11)
 
     xs.append(x)
     ys.append(y)
@@ -167,7 +169,7 @@ for i in np.arange(len(diffs)):
         dist_matrix[i, ii] = d
 
 f, ax = plt.subplots()
-ax.imshow(dist_matrix[:20, :20])
+ax.imshow(dist_matrix)
 ax.set(title="distance matrix", xlabel="trial #", ylabel="trial #")
 
 # %%
