@@ -1,7 +1,7 @@
 # Define colors
 
 
-red = [.7, .2, .2]
+red = [.8, .4, .4]
 blue = [.2, .2, .7]
 green = [.2, .7, .2]
 pink = [.6, .4, .3]

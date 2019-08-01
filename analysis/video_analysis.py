@@ -16,6 +16,7 @@ import matplotlib.patches as patches
 
 from utils.video_utils import Editor as VideoUtils
 from forceplate_config import Config
+from utils.maths.filtering import line_smoother
 
 
 from utils.file_io_utils import *
@@ -71,7 +72,7 @@ class VideoAnalysis(Config, VideoUtils):
         csv_file, video_files = parse_folder_files(self.analysis_config["data_folder"], self.analysis_config["experiment_name"])
         self.data = load_csv_file(csv_file)
         normalized = normalize_channel_data(self.data, self.arduino_config["sensors"])
-
+        smoothed = {k:line_smoother(v, window_size=9, order=5) for k,v in normalized.items()}
         for k, f in video_files.items():
             if not os.path.isfile(f):
                 raise  FileExistsError("videofile doesnt exist: {}".format(f))
@@ -135,12 +136,11 @@ class VideoAnalysis(Config, VideoUtils):
             allc = {}
             for ch, color in self.analysis_config["plot_colors"].items():
                 # Plot sensors traces as KDE
-                channel_data = normalized[ch][data_range[0]-50:data_range[1]-50]
-                channel_data = line_smoother(channel_data, window_size=3, order=4)
+                channel_data = smoothed[ch][data_range[0]-50:data_range[1]-50]
                 x = np.arange(0, len(channel_data))
                 # kde = fit_kde(channel_data, bw=self.analysis_config["smooth_factor"])
-                ax2.fill_between(x, 0, channel_data, alpha=.15, color=color)
-                ax2.plot(x, channel_data, alpha=1, color=color)
+                # ax2.fill_between(x, 0, channel_data, alpha=.15, color=color)
+                ax2.plot(x, channel_data, alpha=1, color=color, label=ch)
 
 
                 # Plot sensors states as colored rectangles
