@@ -32,7 +32,7 @@ from analysis.calibrate_sensors import Calibration
 # %matplotlib inline
 
 # %%
-# Get folders
+# Get experiments folders
 main_fld = "D:\\Egzona"
 sub_flds = {"31":os.path.join(main_fld, "310719"), "13":os.path.join(main_fld, "130819")}
 #"18":os.path.join(main_fld, "180719"), "19":os.path.join(main_fld, "190719")}
@@ -44,22 +44,20 @@ calibration = Calibration()
 
 # %%
 # Get data
+# Load frames times
 df = pd.read_csv('D:\Egzona\clipsframes.csv')
-#df = pd.DataFrame(data)
 
-
+# Load data for each video
 data = {"name":[], "fr":[], "fl":[], "hr":[], "hl":[], "cg":[], "start":[], "end":[]}
 for i, row in df.iterrows():
     fld = sub_flds[row.Video[:2]]
     csv_file, video_files = parse_folder_files(fld, row.Video)
-    
-
     if csv_file is None: raise ValueError([fld, row.Video])
-
+    else:
+        print("Loading file: {}  - -for video: {}".format(csv_file, row.Video))
     sensors_data = load_csv_file(csv_file)
-    print(csv_file)
 
-    # Calibrated sensors
+    # Get calibrated sensors data
     sensors = ["fr", "fl", "hr", "hl"]
     calibrated_sensors = {ch:calibration.correct_raw(volts, ch) for ch, volts in sensors_data.items() if ch in sensors}
 
@@ -67,7 +65,7 @@ for i, row in df.iterrows():
     y = (calibrated_sensors["fr"]+calibrated_sensors["fl"]) - (calibrated_sensors["hr"]+calibrated_sensors["hl"])
     x = (calibrated_sensors["fr"]+calibrated_sensors["hr"]) - (calibrated_sensors["fl"]+calibrated_sensors["hl"])
 
-    # Assign sensors based on direction of motion and first paw moved
+    # Correct for direction of motion and first paw used
     if "b" in row.Direction.lower():
         y = -y
         x = -x
@@ -76,8 +74,9 @@ for i, row in df.iterrows():
     else: 
         pass
      
+    # Get center of gravity trace
     x,y  = x[row.Start:row.End], y[row.Start:row.End]
-    print(row.Start, row.End,len(sensors_data.fr))
+    print("Start frame: {} - end frame: {}".format(row.Start, row.End))
     cg = np.vstack([x, y])
 
     # append to lists
@@ -91,10 +90,10 @@ for i, row in df.iterrows():
 
 data = pd.DataFrame.from_dict(data)
 print("Loaded data")
+print(data)
 
 # %%
 # Plot stuff
-
 f = plt.figure(figsize=(14, 8))
 grid = (5, 6)
 cgax = plt.subplot2grid(grid, (0, 0), rowspan=2, colspan=2)
@@ -112,16 +111,20 @@ hlfrax = plt.subplot2grid(grid, (2, 2), colspan=2, rowspan=2)
 xs, ys, frs, hls = [], [], [], []
 for i, row in data.iterrows():
     print(i, row)
+    # ? to smooth lines
     #x, y = line_smoother(row.cg[:, 0]-row.cg[0, 0], window_size=11), line_smoother(row.cg[:, 1]-row.cg[0, 1], window_size=11)
-    x, y = row.cg[:, 0]-row.cg[0, 0], row.cg[:, 1]-row.cg[0, 1]
-   
-    fr, hl = line_smoother(row.fr[:], window_size=11), line_smoother(row.hl[:], window_size=11)
+    # fr, hl = line_smoother(row.fr[:], window_size=11), line_smoother(row.hl[:], window_size=11)
 
+    x, y = row.cg[:, 0]-row.cg[0, 0], row.cg[:, 1]-row.cg[0, 1]
+    fr, hl = row.fr, row.hl
+
+   # Append to lists 
     xs.append(x)
     ys.append(y)
     frs.append(fr)
     hls.append(hl)
 
+    # Plot
     cgax.plot(x, y, lw=1, alpha=.3, color=white)
 
     xax.plot(x, color=grey, alpha=.25)
@@ -134,15 +137,21 @@ for i, row in data.iterrows():
     hlax.plot(hl, color=grey, alpha=.5)
     hlfrax.plot(hl, fr, color=grey, alpha=.5)
 
-
+# ! here is wher ethe bug is
+try:
     x_mean, y_mean, fr_mean, hr_mean = np.mean(np.vstack(xs), 0), np.mean(np.vstack(ys), 0), np.mean(np.vstack(frs), 0), np.mean(np.vstack(hls), 0)
-
-cgax.plot(x_mean, y_mean, color=red, lw=3, alpha=1)
-xax.plot(x_mean, color=red, lw=6, alpha=1)
-yax.plot(y_mean,  color=red, lw=6, alpha=1)
-dxax.plot(np.diff(x_mean), color=red, lw=6, alpha=1)
-dyax.plot(np.diff(y_mean),  color=red, lw=6, alpha=1)
-hlfrax.plot(fr_mean, hr_mean, color=red, lw=3, alpha=1)
+except:
+    # print shapes of different items in lists
+    for s,d in zip(["xs", "ys", "frs", "hls"], [xs, ys, frs, hls]):
+        print("{} - shape:".format(s))
+        print([len(dd) for dd in d])
+else:
+    cgax.plot(x_mean, y_mean, color=red, lw=3, alpha=1)
+    xax.plot(x_mean, color=red, lw=6, alpha=1)
+    yax.plot(y_mean,  color=red, lw=6, alpha=1)
+    dxax.plot(np.diff(x_mean), color=red, lw=6, alpha=1)
+    dyax.plot(np.diff(y_mean),  color=red, lw=6, alpha=1)
+    hlfrax.plot(fr_mean, hr_mean, color=red, lw=3, alpha=1)
 
 cgax.set(title="center of gravity", xlabel="delta x (g)", ylabel="delta y (g)", xlim=[-30, 30], ylim=[-30, 30])
 yax.set(title="y component", xlabel="time", ylabel="delta y (g)", ylim=[-30, 30])
