@@ -115,8 +115,8 @@ for i, row in data.iterrows():
     #x, y = line_smoother(row.cg[:, 0]-row.cg[0, 0], window_size=11), line_smoother(row.cg[:, 1]-row.cg[0, 1], window_size=11)
     # fr, hl = line_smoother(row.fr[:], window_size=11), line_smoother(row.hl[:], window_size=11)
 
-    x, y = row.cg[:, 0]-row.cg[0, 0], row.cg[:, 1]-row.cg[0, 1]
-    fr, hl = row.fr, row.hl
+    x, y = row.cg[:, 0].values-row.cg[0, 0].values, row.cg[:, 1].values-row.cg[0, 1].values
+    fr, hl = row.fr.values, row.hl.values
 
    # Append to lists 
     xs.append(x)
@@ -145,6 +145,7 @@ except:
     for s,d in zip(["xs", "ys", "frs", "hls"], [xs, ys, frs, hls]):
         print("{} - shape:".format(s))
         print([len(dd) for dd in d])
+    raise ValueError("no")
 else:
     cgax.plot(x_mean, y_mean, color=red, lw=3, alpha=1)
     xax.plot(x_mean, color=red, lw=6, alpha=1)
