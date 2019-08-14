@@ -82,7 +82,7 @@ for i, row in df.iterrows():
     # append to lists
     data["name"].append(row.Video)
     for ch in ["fr", "fl", "hr", "hl"]:
-        data[ch].append(sensors_data[ch].values)
+        data[ch].append(sensors_data[ch].values[row.Start:row.End])
     data["cg"].append(cg.T)
 
     data["start"].append(row.Start)
@@ -115,7 +115,7 @@ for i, row in data.iterrows():
     #x, y = line_smoother(row.cg[:, 0]-row.cg[0, 0], window_size=11), line_smoother(row.cg[:, 1]-row.cg[0, 1], window_size=11)
     # fr, hl = line_smoother(row.fr[:], window_size=11), line_smoother(row.hl[:], window_size=11)
 
-    x, y = row.cg[:, 0].values-row.cg[0, 0].values, row.cg[:, 1].values-row.cg[0, 1].values
+    x, y = row.cg[:, 0]-row.cg[0, 0], row.cg[:, 1]-row.cg[0, 1]
     fr, hl = row.fr.values, row.hl.values
 
    # Append to lists 
