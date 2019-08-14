@@ -18,7 +18,7 @@ class Inspector(Config, VideoUtils):
 
 
 if __name__ == "__main__":
-    videofile = "D:\\Egzona\\310719\\310719_Mnone_cam0.avi"  # * <--- path to the video to analyse 
+    videofile = "D:\\Egzona\\130819\\130819_Mnone2_cam0.avi"  # * <--- path to the video to analyse 
     inspector = Inspector(videofile)
 
 

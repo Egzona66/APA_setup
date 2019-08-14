@@ -30,8 +30,8 @@ class Config:
         ############## POST-HOC ANALYSIS  ####################
     """
     analysis_config = {
-        "data_folder": "D:\\Egzona\\310719", # where the data to analyse are stored
-        "experiment_name": "310719_M1R",
+        "data_folder": "D:\\Egzona\\130819", # where the data to analyse are stored
+        "experiment_name": "130819_Mnone2",
         "plot_colors": { "fr":magenta, 
                         "fl":blue, 
                         "hr":red, 
@@ -40,8 +40,8 @@ class Config:
         # * for composite video
         # ? run video_analysis.py
         "start_clip_time_s": None, # ? Create clips start at this point, in SECONDS
-        "start_clip_time_frame": 78795, # ? Create clips start at this point, in FRAMES
-        "clip_n_frames": 100 , # duration of the clip in frames
+        "start_clip_time_frame": 30692, # ? Create clips start at this point, in FRAMES
+        "clip_n_frames": 170 , # duration of the clip in frames
         "clip_name":"composite2", 
 
         "outputdict":{ # for ffmpeg

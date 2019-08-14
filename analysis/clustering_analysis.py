@@ -29,14 +29,14 @@ from utils.constants import *
 
 from analysis.calibrate_sensors import Calibration
 
-%matplotlib inline
+# %matplotlib inline
 
 # %%
 # Get folders
 main_fld = "D:\\Egzona"
-sub_flds = {"31":os.path.join(main_fld, "310719")}
+sub_flds = {"31":os.path.join(main_fld, "310719"), "13":os.path.join(main_fld, "130819")}
 #"18":os.path.join(main_fld, "180719"), "19":os.path.join(main_fld, "190719")}
-framesfile = os.path.join(main_fld, "clipsframes.csv")
+#framesfile = os.path.join(main_fld, "clipsframes.csv")
 
 # %%
 # Get calibration
@@ -44,16 +44,20 @@ calibration = Calibration()
 
 # %%
 # Get data
-df = pd.read_csv(framesfile)
+df = pd.read_csv('D:\Egzona\clipsframes.csv')
+#df = pd.DataFrame(data)
+
 
 data = {"name":[], "fr":[], "fl":[], "hr":[], "hl":[], "cg":[], "start":[], "end":[]}
 for i, row in df.iterrows():
     fld = sub_flds[row.Video[:2]]
     csv_file, video_files = parse_folder_files(fld, row.Video)
+    
 
     if csv_file is None: raise ValueError([fld, row.Video])
 
     sensors_data = load_csv_file(csv_file)
+    print(csv_file)
 
     # Calibrated sensors
     sensors = ["fr", "fl", "hr", "hl"]
@@ -72,8 +76,8 @@ for i, row in df.iterrows():
     else: 
         pass
      
-    xy,  = x[row.start:row.end], y[row.start:row.end]
-
+    x,y  = x[row.Start:row.End], y[row.Start:row.End]
+    print(row.Start, row.End,len(sensors_data.fr))
     cg = np.vstack([x, y])
 
     # append to lists
@@ -108,9 +112,9 @@ hlfrax = plt.subplot2grid(grid, (2, 2), colspan=2, rowspan=2)
 xs, ys, frs, hls = [], [], [], []
 for i, row in data.iterrows():
     print(i, row)
-    # x, y = line_smoother(row.cg[:, 0]-row.cg[0, 0], window_size=11), line_smoother(row.cg[:, 1]-row.cg[0, 1], window_size=11)
+    #x, y = line_smoother(row.cg[:, 0]-row.cg[0, 0], window_size=11), line_smoother(row.cg[:, 1]-row.cg[0, 1], window_size=11)
     x, y = row.cg[:, 0]-row.cg[0, 0], row.cg[:, 1]-row.cg[0, 1]
-    
+   
     fr, hl = line_smoother(row.fr[:], window_size=11), line_smoother(row.hl[:], window_size=11)
 
     xs.append(x)
@@ -131,7 +135,7 @@ for i, row in data.iterrows():
     hlfrax.plot(hl, fr, color=grey, alpha=.5)
 
 
-x_mean, y_mean, fr_mean, hr_mean = np.mean(np.vstack(xs), 0), np.mean(np.vstack(ys), 0), np.mean(np.vstack(frs), 0), np.mean(np.vstack(hls), 0)
+    x_mean, y_mean, fr_mean, hr_mean = np.mean(np.vstack(xs), 0), np.mean(np.vstack(ys), 0), np.mean(np.vstack(frs), 0), np.mean(np.vstack(hls), 0)
 
 cgax.plot(x_mean, y_mean, color=red, lw=3, alpha=1)
 xax.plot(x_mean, color=red, lw=6, alpha=1)
@@ -164,7 +168,7 @@ for fr, hl in zip(frs, hls):
 dist_matrix = np.zeros((len(diffs), len(diffs)))
 for i in np.arange(len(diffs)):
     for ii in np.arange(len(diffs)):
-        # d = np.sum(calc_distance_between_points_two_vectors_2d(diffs[i], diffs[ii]))
+        #d = np.sum(calc_distance_between_points_two_vectors_2d(diffs[i], diffs[ii]))
         d = np.sum(np.abs(diffs[i]-diffs[ii]))
         dist_matrix[i, ii] = d
 
