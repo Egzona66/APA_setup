@@ -32,13 +32,16 @@ class Calibration(Config):
         readouts = dict(fr=[], fl=[], hr=[], hl=[])
         weights = []
         for i, row in calibration_data.iterrows():
+            # Get the average of the voltage readings
+            measurements = [row[k] for k in row.keys() if "voltage" in k and row[k]]
+            voltage = np.nanmean(measurements)
             readouts[row.Sensor].append(row.voltage/5)
 
             if row.Sensor == "fr":
                 weights.append(row.weight)
 
         if plot:
-            f, ax = plt.subplots()
+            f, ax = plt.subplots() 
             fits = {}
             for ch, voltages in readouts.items():
                 fit = np.polyfit(voltages, weights,  6)

@@ -34,7 +34,7 @@ from analysis.calibrate_sensors import Calibration
 # %%
 # Get experiments folders
 main_fld = "D:\\Egzona"
-sub_flds = {"31":os.path.join(main_fld, "310719"), "13":os.path.join(main_fld, "130819")}
+sub_flds = {"31":os.path.join(main_fld, "310719"), "13":os.path.join(main_fld, "130819"), "14":os.path.join(main_fld, "140819")}
 #"18":os.path.join(main_fld, "180719"), "19":os.path.join(main_fld, "190719")}
 #framesfile = os.path.join(main_fld, "clipsframes.csv")
 
@@ -90,7 +90,7 @@ for i, row in df.iterrows():
 
 data = pd.DataFrame.from_dict(data)
 print("Loaded data")
-print(data)
+# print(data)
 
 # %%
 # Plot stuff
@@ -116,7 +116,7 @@ for i, row in data.iterrows():
     # fr, hl = line_smoother(row.fr[:], window_size=11), line_smoother(row.hl[:], window_size=11)
 
     x, y = row.cg[:, 0]-row.cg[0, 0], row.cg[:, 1]-row.cg[0, 1]
-    fr, hl = row.fr.values, row.hl.values
+    fr, hl = row.fr, row.hl
 
    # Append to lists 
     xs.append(x)
@@ -154,7 +154,7 @@ else:
     dyax.plot(np.diff(y_mean),  color=red, lw=6, alpha=1)
     hlfrax.plot(fr_mean, hr_mean, color=red, lw=3, alpha=1)
 
-cgax.set(title="center of gravity", xlabel="delta x (g)", ylabel="delta y (g)", xlim=[-30, 30], ylim=[-30, 30])
+cgax.set(title="center of gravity", xlabel="delta x (g)", ylabel="delta y (g)", xlim=[-10, 15], ylim=[-5, 15])
 yax.set(title="y component", xlabel="time", ylabel="delta y (g)", ylim=[-30, 30])
 xax.set(title="x component", xlabel="time", ylabel="delta x (g)", ylim=[-30, 30])
 dyax.set(title="y component", xlabel="time", ylabel="y speed", ylim=[-5, 5])
