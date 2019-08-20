@@ -3,7 +3,7 @@ sys.path.append("./")
 
 import os
 import numpy as np
-
+from scipy import signal
 
 def parse_folder_files(folder, exp_name):
     video_files = {}
@@ -22,3 +22,9 @@ def parse_folder_files(folder, exp_name):
 
 def normalize_channel_data(data, sensors):
     return  {ch: data[ch].values - np.nanmedian(data[ch].values) for ch in sensors}
+
+def baseline_sensor_data(values):
+    return values - np.nanmedian(values)
+
+def upsample_timeseries(values, new_frequency):
+    return signal.resample(values, new_frequency)

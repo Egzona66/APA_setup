@@ -34,8 +34,8 @@ from analysis.calibrate_sensors import Calibration
 # %%
 # Get experiments folders
 main_fld = "D:\\Egzona"
-sub_flds = {"31":os.path.join(main_fld, "310719"), "13":os.path.join(main_fld, "130819"), "14":os.path.join(main_fld, "140819")}
-#"18":os.path.join(main_fld, "180719"), "19":os.path.join(main_fld, "190719")}
+sub_flds = {"13":os.path.join(main_fld, "130819"), "14":os.path.join(main_fld, "140819")}
+#"18":os.path.join(main_fld, "180719"), "19":os.path.join(main_fld, "190719" #{"31":os.path.join(main_fld, "310719"), )}
 #framesfile = os.path.join(main_fld, "clipsframes.csv")
 
 # %%
@@ -47,19 +47,34 @@ calibration = Calibration()
 # Load frames times
 df = pd.read_csv('D:\Egzona\clipsframes.csv')
 
+
+# ! important params
+target_fps = 500
+
 # Load data for each video
 data = {"name":[], "fr":[], "fl":[], "hr":[], "hl":[], "cg":[], "start":[], "end":[]}
 for i, row in df.iterrows():
-    fld = sub_flds[row.Video[:2]]
+    try:
+        fld = sub_flds[row.Video[:2]]
+    except:
+        continue
+
     csv_file, video_files = parse_folder_files(fld, row.Video)
-    if csv_file is None: raise ValueError([fld, row.Video])
+    if csv_file is None: 
+        continue
     else:
         print("Loading file: {}  - -for video: {}".format(csv_file, row.Video))
     sensors_data = load_csv_file(csv_file)
 
-    # Get calibrated sensors data
+    # Get baselined and calibrated sensors data
     sensors = ["fr", "fl", "hr", "hl"]
-    calibrated_sensors = {ch:calibration.correct_raw(volts, ch) for ch, volts in sensors_data.items() if ch in sensors}
+    calibrated_sensors = {ch:calibration.correct_raw(baseline_sensor_data(volts), ch) for ch, volts in sensors_data.items() if ch in sensors}
+ 
+    # ? Get resampled data (from frames to ms)
+    fps = int(row["Frame rate"])
+    secs = len(calibrated_sensors["fr"])/fps
+    n_samples = int(secs * target_fps)
+    calibrated_sensors = {ch:upsample_timeseries(data, n_samples) for ch, data in calibrated_sensors.items()}
 
     # compute center of gravity
     y = (calibrated_sensors["fr"]+calibrated_sensors["fl"]) - (calibrated_sensors["hr"]+calibrated_sensors["hl"])
@@ -75,18 +90,23 @@ for i, row in df.iterrows():
         pass
      
     # Get center of gravity trace
-    x,y  = x[row.Start:row.End], y[row.Start:row.End]
-    print("Start frame: {} - end frame: {}".format(row.Start, row.End))
+    #end = row.End + 0  # ! adding extra frames
+    start= int(np.floor(row.Start/fps*target_fps))
+    end = int(start + target_fps*.5)
+    x,y  = x[start:end], y[start:end]
+    print("Start frame: {} - end frame: {} - {}  nframes".format(start, end, (end - start)))
     cg = np.vstack([x, y])
 
     # append to lists
     data["name"].append(row.Video)
     for ch in ["fr", "fl", "hr", "hl"]:
-        data[ch].append(sensors_data[ch].values[row.Start:row.End])
+        if len(calibrated_sensors[ch][start:end]) != (end - start):
+            raise ValueError(ch)
+        data[ch].append(calibrated_sensors[ch][start:end])
     data["cg"].append(cg.T)
 
-    data["start"].append(row.Start)
-    data["end"].append(row.End)
+    data["start"].append(start)
+    data["end"].append(end)
 
 data = pd.DataFrame.from_dict(data)
 print("Loaded data")
@@ -94,76 +114,76 @@ print("Loaded data")
 
 # %%
 # Plot stuff
-f = plt.figure(figsize=(14, 8))
-grid = (5, 6)
+f = plt.figure(figsize=(14, 14))
+grid = (4, 4)
 cgax = plt.subplot2grid(grid, (0, 0), rowspan=2, colspan=2)
+cgtax = plt.subplot2grid(grid, (0, 2), rowspan=2, colspan=2)
 
-xax = plt.subplot2grid(grid, (0, 2), colspan=2)
-yax = plt.subplot2grid(grid, (1, 2), colspan=2)
-
-dxax = plt.subplot2grid(grid, (0, 4), colspan=2)
-dyax = plt.subplot2grid(grid, (1, 4), colspan=2)
-
-frax = plt.subplot2grid(grid, (2, 0), colspan=2)
+flax = plt.subplot2grid(grid, (2, 0), colspan=2)
 hlax = plt.subplot2grid(grid, (3, 0), colspan=2)
-hlfrax = plt.subplot2grid(grid, (2, 2), colspan=2, rowspan=2)
+frax = plt.subplot2grid(grid, (2, 2), colspan=2)
+hrax = plt.subplot2grid(grid, (3, 2), colspan=2)
 
-xs, ys, frs, hls = [], [], [], []
+fls, hrs, frs, hls, xs, ys = [], [], [], [], [], []
+excluded = 0
 for i, row in data.iterrows():
-    print(i, row)
-    # ? to smooth lines
-    #x, y = line_smoother(row.cg[:, 0]-row.cg[0, 0], window_size=11), line_smoother(row.cg[:, 1]-row.cg[0, 1], window_size=11)
-    # fr, hl = line_smoother(row.fr[:], window_size=11), line_smoother(row.hl[:], window_size=11)
-
     x, y = row.cg[:, 0]-row.cg[0, 0], row.cg[:, 1]-row.cg[0, 1]
-    fr, hl = row.fr, row.hl
+    fr, hl, fl, hr = row.fr, row.hl, row.fl, row.hr
 
-   # Append to lists 
+    # Append to lists if at start of trial each sensor has at least 1g of force applied
+    check = True
+    for sens, lst in zip([fr, hl, fl, hr], [frs, hls, fls, hrs]):
+         if sens[0] < .5 and check:
+             excluded += 1
+             check = False
+    if not check: continue
+    
+    for i, (sens, lst) in enumerate(zip([fr, hl, fl, hr], [frs, hls, fls, hrs])):
+        if np.abs(len(sens) - np.mean([len(x) for x in lst])) != 0 and lst:
+            raise ValueError([i, len(sens), [len(x) for x in lst]])
+        lst.append(sens)
+
     xs.append(x)
     ys.append(y)
-    frs.append(fr)
-    hls.append(hl)
 
     # Plot
-    cgax.plot(x, y, lw=1, alpha=.3, color=white)
-
-    xax.plot(x, color=grey, alpha=.25)
-    yax.plot(y, color=grey, alpha=.25)
-
-    dxax.plot(np.diff(x), color=grey, alpha=.25)
-    dyax.plot(np.diff(y), color=grey, alpha=.25)
-
+    cgtax.plot(x, y, lw=1, alpha=.3, color=white)
     frax.plot(fr, color=grey, alpha=.5)
     hlax.plot(hl, color=grey, alpha=.5)
-    hlfrax.plot(hl, fr, color=grey, alpha=.5)
+    flax.plot(fl, color=grey, alpha=.5)
+    hrax.plot(hr, color=grey, alpha=.5)
 
-# ! here is wher ethe bug is
 try:
-    x_mean, y_mean, fr_mean, hr_mean = np.mean(np.vstack(xs), 0), np.mean(np.vstack(ys), 0), np.mean(np.vstack(frs), 0), np.mean(np.vstack(hls), 0)
+    fr_median, hl_median, fl_median, hr_median = np.median(np.vstack(frs), 0), np.median(np.vstack(hls), 0),  np.median(np.vstack(fls), 0),  np.median(np.vstack(hrs), 0)
+    x_median, y_median = np.median(np.vstack(xs), 0), np.median(np.vstack(ys), 0)
 except:
-    # print shapes of different items in lists
-    for s,d in zip(["xs", "ys", "frs", "hls"], [xs, ys, frs, hls]):
-        print("{} - shape:".format(s))
-        print([len(dd) for dd in d])
     raise ValueError("no")
+    # pass
 else:
-    cgax.plot(x_mean, y_mean, color=red, lw=3, alpha=1)
-    xax.plot(x_mean, color=red, lw=6, alpha=1)
-    yax.plot(y_mean,  color=red, lw=6, alpha=1)
-    dxax.plot(np.diff(x_mean), color=red, lw=6, alpha=1)
-    dyax.plot(np.diff(y_mean),  color=red, lw=6, alpha=1)
-    hlfrax.plot(fr_mean, hr_mean, color=red, lw=3, alpha=1)
+    time = np.arange(len(fr_median))
 
-cgax.set(title="center of gravity", xlabel="delta x (g)", ylabel="delta y (g)", xlim=[-10, 15], ylim=[-5, 15])
-yax.set(title="y component", xlabel="time", ylabel="delta y (g)", ylim=[-30, 30])
-xax.set(title="x component", xlabel="time", ylabel="delta x (g)", ylim=[-30, 30])
-dyax.set(title="y component", xlabel="time", ylabel="y speed", ylim=[-5, 5])
-dxax.set(title="x component", xlabel="time", ylabel="x speed", ylim=[-5, 5])
-frax.set(title="FR", xlabel="time", ylabel="volts", ylim=[0, .5])
-hlax.set(title="HL", xlabel="time", ylabel="volts", ylim=[0, .5])
-hlfrax.set(title="HL-FR", xlabel="HL", ylabel="FR", )
+    # cool colors yo
+    dtime = np.zeros_like(fr_median)
+    t0, t1 = np.where(fr_median < 1)[0][0], np.where(hl_median < 1)[0][0]
+    dtime[t0:t1] = 1
+    dtime[t1:] = 2
 
+    cgax.scatter(x_median, y_median, c=time, alpha=1, zorder=10)
+    cgtax.scatter(x_median, y_median, c=dtime, alpha=1, cmap="tab20c", zorder=10)
+    cgatx.plot(x_median, y_median, color=red, lw=4)
+    frax.plot(time, fr_median, color=red, lw=4)
+    hlax.plot(time, hl_median, color=red, lw=4)
+    flax.plot(time, fl_median, color=red, lw=4)
+    hrax.plot(time, hr_median, color=red, lw=4)
 
+print("Excluded {} of {} trials".format(excluded, i+1))
+
+cgax.set(title="center of gravity", xlabel="delta x (g)", ylabel="delta y (g)", xlim=[-15, 15], ylim=[-5, 20])
+cgtax.set(title="center of gravity", xlabel="delta x (g)", ylabel="delta y (g)", xlim=[-15, 15], ylim=[-5, 20])
+frax.set(title="FR", xlabel="time", ylabel="(g)")
+hlax.set(title="HL", xlabel="time", ylabel="(g)")
+flax.set(title="FL", xlabel="time", ylabel="(g)")
+hrax.set(title="HR", xlabel="time", ylabel="(g)")
 # %%
 f, ax = plt.subplots()
 diffs = [hl - fr for hl, fr in zip(hls, frs)]
