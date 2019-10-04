@@ -203,24 +203,24 @@ hlax.set(title="HL")
 flax.set(title="FL")
 hrax.set(title="HR")
 
-frax.axhline(2.8, color=[.2, .2, .2], lw=2, ls='--')
-frax.axhline(.8, color=[.2, .2, .2], lw=2, ls='--')
-hlax.axhline(4.8, color=[.2, .2, .2], lw=2, ls='--')
-hlax.axhline(.8, color=[.2, .2, .2], lw=2, ls='--')
+# frax.axhline(2.8, color=[.2, .2, .2], lw=2, ls='--')
+# frax.axhline(.5, color=[.2, .2, .2], lw=2, ls='--')
+# hlax.axhline(4.8, color=[.2, .2, .2], lw=2, ls='--')
+# hlax.axhline(.6, color=[.2, .2, .2], lw=2, ls='--')
 
 for ch, ax in zip(['fr', 'hl', 'fl', 'hr'], [frax, hlax, flax, hrax]):
-    ax.set(xlabel="time", ylabel="(g)", xlim=[75, 75+start_shift], ylim=[0, 25], 
+    ax.set(xlabel="time", ylabel="(g)", xlim=[100, 150+start_shift], ylim=[0, 25], 
             xticks=np.arange(0, 300+start_shift, 50), xticklabels=np.arange(-start_shift, 300+start_shift+1, 50))
 
 
     # if ch in ['hl', 'fr']:
     # FR
-    ax.add_patch(patches.Rectangle((start_shift+9, 22), 21, 1,  linewidth=3, color=[.6, .6, .9], facecolor='none', alpha=1, zorder=-1, ))
-    ax.add_patch(patches.Rectangle((start_shift+9, 0), 21, 22,  linewidth=3, edgecolor=[.6, .6, .9], facecolor='none', alpha=.8, zorder=-10, ))
+    ax.add_patch(patches.Rectangle((start_shift+9, 23), 40, 1,  linewidth=3, color=[.6, .6, .9], facecolor='none', alpha=1, zorder=-1, ))
+    ax.add_patch(patches.Rectangle((start_shift+9, 0), 40, 23,  linewidth=3, edgecolor=[.6, .6, .9], facecolor='none', alpha=.8, zorder=-10, ))
 
     # HL
-    ax.add_patch(patches.Rectangle((start_shift+13, 20), 36, 1, linewidth=3,  color=[.6, .9, .6], facecolor='none', alpha=1, zorder=-1, ))
-    ax.add_patch(patches.Rectangle((start_shift+13, 0), 36, 20, linewidth=3,  edgecolor=[.6, .9, .6], facecolor='none', alpha=.8, zorder=-10, ))
+    ax.add_patch(patches.Rectangle((start_shift+13, 21.5), 49, 1, linewidth=3,  color=[.6, .9, .6], facecolor='none', alpha=1, zorder=-1, ))
+    ax.add_patch(patches.Rectangle((start_shift+13, 0), 49, 21.5, linewidth=3,  edgecolor=[.6, .9, .6], facecolor='none', alpha=.8, zorder=-10, ))
 
 
 
