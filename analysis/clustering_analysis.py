@@ -34,8 +34,8 @@ from analysis.calibrate_sensors import Calibration
 # %%
 # Get experiments folders
 main_fld = "D:\\Egzona"
-sub_flds = {"13":os.path.join(main_fld, "130819"), "14":os.path.join(main_fld, "140819")}
-#"18":os.path.join(main_fld, "180719"), "19":os.path.join(main_fld, "190719" #{"31":os.path.join(main_fld, "310719"), )}
+sub_flds = {"14":os.path.join(main_fld, "140819"),"31":os.path.join(main_fld, "310719"), "13":os.path.join(main_fld, "130819")} 
+#"18":os.path.join(main_fld, "180719"), "19":os.path.join(main_fld, "190719") 
 #framesfile = os.path.join(main_fld, "clipsframes.csv")
 
 # %%
@@ -92,7 +92,7 @@ for i, row in df.iterrows():
     # Get center of gravity trace
     #end = row.End + 0  # ! adding extra frames
     start= int(np.floor(row.Start/fps*target_fps))
-    end = int(start + target_fps*.5)
+    end = int(start + target_fps*.6)
     x,y  = x[start:end], y[start:end]
     print("Start frame: {} - end frame: {} - {}  nframes".format(start, end, (end - start)))
     cg = np.vstack([x, y])
@@ -133,7 +133,7 @@ for i, row in data.iterrows():
     # Append to lists if at start of trial each sensor has at least 1g of force applied
     check = True
     for sens, lst in zip([fr, hl, fl, hr], [frs, hls, fls, hrs]):
-         if sens[0] < .5 and check:
+         if sens[0] < 3 and check:
              excluded += 1
              check = False
     if not check: continue
@@ -168,9 +168,8 @@ else:
     dtime[t0:t1] = 1
     dtime[t1:] = 2
 
-    cgax.scatter(x_median, y_median, c=time, alpha=1, zorder=10)
+    cgax.scatter(x_median, y_median, c=time, alpha=1, zorder=10, cmap="Reds")
     cgtax.scatter(x_median, y_median, c=dtime, alpha=1, cmap="tab20c", zorder=10)
-    cgatx.plot(x_median, y_median, color=red, lw=4)
     frax.plot(time, fr_median, color=red, lw=4)
     hlax.plot(time, hl_median, color=red, lw=4)
     flax.plot(time, fl_median, color=red, lw=4)
