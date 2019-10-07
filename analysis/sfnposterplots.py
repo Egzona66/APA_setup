@@ -247,3 +247,95 @@ print("Left paw starts at {} ms and ends at {} ms. Movement lasts: {}".format(l_
 
 
 #%%
+# ? DLC PLOTS
+
+datafld = "D:\\Egzona\\Plot-videos DLC\\data"
+
+# Get the video names
+vids = os.listdir(datafld)
+vid_names = [v.split("Deep")[0] for v in vids if 'top' not in v]
+
+side_vids = [os.path.join(datafld, v) for v in vids if 'top' not in v]
+top_vids = [os.path.join(datafld, v) for v in vids if 'top' in v]
+
+# videos metadata#
+metadata = pd.read_csv('D:\Egzona\clipsframes.csv')
+
+#%%
+f = plt.figure(figsize=(14, 14), facecolor="white")
+grid = (2, 1)
+
+
+sax = plt.subplot2grid(grid, (0, 0))
+tax = plt.subplot2grid(grid, (1, 0))
+
+# ! PARAMS
+pcutoff = 0.9999
+
+
+
+colors = {'back left paw':'r',
+            'back right paw':'g',
+            'front left paw':'b',
+            'front right paw':'m',
+            
+            'back left paw': 'r',
+            'back left toes': 'r', 
+            'front left paw': 'b',
+            'front left toes': 'b',
+            'front right toes': 'm',
+            'front right paw': 'm',
+            'back right paw': 'g',
+            'back right toes': 'g',
+            }
+
+top_bps = ['nose', '']
+for vid in vid_names:
+    print(vid)
+    vidmeta = metadata.loc[metadata.Video == vid].iloc[0]
+
+
+
+    if vidmeta.Direction.lower() == "b":
+        back = True
+    else: 
+        back = False
+    
+    if vidmeta.Paw.lower() == "l":
+        left = True
+    else: 
+        left = False
+
+    if not back:
+        continue
+
+    print("plotting ", vid)
+
+    # get data top
+    top = pd.read_hdf([f for f in top_vids if vid in f][0])
+    tscorer = top.columns.get_level_values(0)[0]
+    top_bps = set(top[tscorer].columns.get_level_values(0))
+
+    for bp in top_bps:
+        if bp not in list(colors.keys()): continue
+        
+        Index = top[tscorer][bp]['likelihood'].values > pcutoff
+        x, y = top[tscorer][bp]['x'].values[Index], -top[tscorer][bp]['y'].values[Index]
+
+        tax.scatter(x, y, c=colors[bp])
+        
+    # get data side
+    side = pd.read_hdf([f for f in side_vids if vid in f][0])
+    tscorer = side.columns.get_level_values(0)[0]
+    side_bps = set(side[tscorer].columns.get_level_values(0))
+
+    for bp in top_bps:
+        if bp not in list(colors.keys()): continue
+        
+        Index = side[tscorer][bp]['likelihood'].values > pcutoff
+        x, y = side[tscorer][bp]['x'].values[Index], -side[tscorer][bp]['y'].values[Index]
+
+        sax.scatter(x, y, c=colors[bp])
+
+
+#%%
