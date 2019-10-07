@@ -64,3 +64,7 @@ def fit_kde(x, **kwargs):
     kde = sm.nonparametric.KDEUnivariate(x)
     kde.fit(**kwargs) # Estimate the densities
     return kde
+
+
+def rgb255_to_rgb1(rgb):
+    return [c/255 for c in rgb]

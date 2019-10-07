@@ -260,8 +260,11 @@ top_vids = [os.path.join(datafld, v) for v in vids if 'top' in v]
 
 # videos metadata#
 metadata = pd.read_csv('D:\Egzona\clipsframes.csv')
+target_fps = 500
 
 #%%
+example_trace = "130819_F1R2a"
+
 f = plt.figure(figsize=(14, 14), facecolor="white")
 grid = (2, 1)
 
@@ -270,31 +273,31 @@ sax = plt.subplot2grid(grid, (0, 0))
 tax = plt.subplot2grid(grid, (1, 0))
 
 # ! PARAMS
-pcutoff = 0.9999
+pcutoff = 0.1
 
-
-
-colors = {'back left paw':'r',
-            'back right paw':'g',
-            'front left paw':'b',
-            'front right paw':'m',
-            
-            'back left paw': 'r',
-            'back left toes': 'r', 
-            'front left paw': 'b',
-            'front left toes': 'b',
-            'front right toes': 'm',
-            'front right paw': 'm',
-            'back right paw': 'g',
-            'back right toes': 'g',
+colors = {  'back right paw':'#F9A31A',
+            'back left paw':'#F37822',
+            'front right paw':'#72C9C3',
+            'front left paw':'#FDE85C',
+            'nose':'#283A8C',
+}
+ 
+sidecolors = {
+            'nose': '#283A8C',
+            'back left paw': '#ED3426',
+            'back left toes': '#F37822', 
+            'front left paw': '#FDE85C',
+            'front left toes': '#DAE023',
+            'front right toes': '#DAE023',
+            'front right paw': '#FDE85C',
+            'back right paw': '#ED3426',
+            'back right toes': '#F37822',
             }
 
-top_bps = ['nose', '']
+frame_center = [240, 160]
+
 for vid in vid_names:
-    print(vid)
     vidmeta = metadata.loc[metadata.Video == vid].iloc[0]
-
-
 
     if vidmeta.Direction.lower() == "b":
         back = True
@@ -306,36 +309,72 @@ for vid in vid_names:
     else: 
         left = False
 
-    if not back:
-        continue
-
-    print("plotting ", vid)
-
-    # get data top
+    # TOP
     top = pd.read_hdf([f for f in top_vids if vid in f][0])
     tscorer = top.columns.get_level_values(0)[0]
     top_bps = set(top[tscorer].columns.get_level_values(0))
 
     for bp in top_bps:
         if bp not in list(colors.keys()): continue
-        
         Index = top[tscorer][bp]['likelihood'].values > pcutoff
-        x, y = top[tscorer][bp]['x'].values[Index], -top[tscorer][bp]['y'].values[Index]
+        x, y = top[tscorer][bp]['x'].values[Index], top[tscorer][bp]['y'].values[Index]
 
-        tax.scatter(x, y, c=colors[bp])
+        if back:
+            deltax, deltay = -(x-frame_center[0]), -(y-frame_center[1])+60
+        else:
+            deltax, deltay = x-frame_center[0], y-frame_center[1]
+
+        if vid != example_trace:
+            col = [.7, .7, .7]
+            zorder = 4
+            alpha = 1
+        else:
+            col = colors[bp]
+            zorder=99
+            alpha=1
+        tax.scatter(deltax+150, deltay+125, color=col, alpha=alpha, zorder=zorder)
+
         
-    # get data side
+    # SIDE
     side = pd.read_hdf([f for f in side_vids if vid in f][0])
     tscorer = side.columns.get_level_values(0)[0]
     side_bps = set(side[tscorer].columns.get_level_values(0))
 
-    for bp in top_bps:
-        if bp not in list(colors.keys()): continue
+    for bp in side_bps:
+        if bp not in list(sidecolors.keys()): continue
         
+        if back:
+            if "left" in bp: continue
+        else: 
+            if "right" in bp: continue    
+
+
         Index = side[tscorer][bp]['likelihood'].values > pcutoff
         x, y = side[tscorer][bp]['x'].values[Index], -side[tscorer][bp]['y'].values[Index]
 
-        sax.scatter(x, y, c=colors[bp])
+        if back:
+            deltax, deltay = (x-frame_center[0]), y-frame_center[1]
+        else:
+            deltax, deltay = -(x-frame_center[0]), y-frame_center[1]
+
+        if vid != example_trace:
+            col = [.7, .7, .7]
+            zorder = 4
+            alpha = 1
+        else:
+            col = sidecolors[bp]
+            zorder=99
+            alpha=1
+
+        sax.scatter(deltax+150, deltay+460, color=col, alpha=alpha, zorder=zorder)
+
+
+    # sax.invert_yaxis()
+    # tax.invert_yaxis()
+
+    for ax in [sax, tax]:
+        ax.set(xlim=[0, 480], ylim=[0, 320])
+#%%
 
 
 #%%
