@@ -32,7 +32,6 @@ class Camera():
         else:
             self.cameras = pylon.InstantCameraArray(self.camera_config["n_cameras"])  
 
-
     def get_camera_writers(self):
         # Open FFMPEG camera writers if we are saving to video
         if self.save_to_video: 
@@ -138,6 +137,9 @@ class Camera():
                 # Read the state of the arduino pins and save to file
                 sensor_states = self.read_arduino_write_to_file(grab.TimeStamp)
 
+                # Threshold sensor data and control door of the arena
+                self.live_sensors_control(sensor_states)
+
                 # If live plotting, add the data and then update plots
                 if self.live_plotting:
                     self.append_sensors_data(sensor_states)
@@ -145,7 +147,7 @@ class Camera():
                         self.update_sensors_plot()
                     except: raise ValueError("Could not append live sensor data during live plotting")
 
-                # Update frame count and terminate
+                # Update frame count
                 self.frame_count += 1
 
                 # Stop if reached max frames

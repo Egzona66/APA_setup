@@ -6,10 +6,18 @@ class Config:
     """
         ############## EXPERIMENT CONFIG  ####################
     """
+
+    # ! ! ! ! ! !
+    # ! fix this (arduino config) when the sensor is fixed:
+    #     n_sensors = 3 # ! fix this because a sensor is brocken
+
+
+
+
     # ! Change these for every recording
-    experiment_folder = "E:\\Egzona\\190719"   # ? This should be changed for everyexperiment to avoid overwriting 
-    experiment_name = "190719_Mnone"  # should be something like YYMMDD_MOUSEID, all files for an experiment will start with this name
-    experiment_duration = 5*60  # acquisition duration in seconds, alternatively set as None
+    experiment_folder = "E:\\Egzona\\test"   # ? This should be changed for everyexperiment to avoid overwriting 
+    experiment_name = "test"  # should be something like YYMMDD_MOUSEID, all files for an experiment will start with this name
+    experiment_duration = 2*60  # acquisition duration in seconds, alternatively set as None
 
     # * Live video frames display and sensors data plotting
     live_display = False  # show the video frames as video is acquired
@@ -17,13 +25,24 @@ class Config:
 
     # * Check that these options are correct
     com_port = "COM5"  # port of the arduino running Firmata for data acquisition
-    acquisition_framerate = 200  # fps of camera triggering -> NEED TO SPECIFY SLEEP TIME IN ARDUINO for frame triggering
+    acquisition_framerate = 400  # fps of camera triggering -> NEED TO SPECIFY SLEEP TIME IN ARDUINO for frame triggering
 
 
-    overwrite_files = False # ! ATTENTION: this is useful for debug but could lead to overwriting experimental data
+    overwrite_files = True # ! ATTENTION: this is useful for debug but could lead to overwriting experimental data
     # So this number is just indicative but the true acquisition rate depends on the trigger arduino
 
     save_to_video = True  # ! decide if you want to save the videos or not
+
+    """
+        ############## LIVE SENSOR CONTROLS  ####################
+    """
+    # These commands control how to intepret the live read out to the sensors and act accordingly
+
+    # Thresholds [When all th sensors have a readout > th, do something (e.g. open door)]
+    live_sensors_ths = {"fr":.05, 
+                        "fl":.05,
+                        "hr":.05,
+                        "hl":.05}
 
 
     """
@@ -72,7 +91,7 @@ class Config:
 
     camera_config = {
         "video_format": ".avi",
-        "n_cameras": 2,
+        "n_cameras": 1,  # changed on 05/11/2019 to run only one camera
         "timeout": 100,   # frame acquisition timeout
 
         # ? Trigger mode and acquisition options -> needed for constant framerate
@@ -113,12 +132,17 @@ class Config:
             # Specify the pins receiving the input from the sensors
             "fr": 0, # Currently the inputs from the force sensors go to digital pins on the arduino board
             "fl": 2,
-            "hr": 4, 
-            "hl": 6,
+            "hr": 6, 
+            "hl": 4,
         },
+        "door_open_pin": 10,
+        "door_close_pin": 11,
         "arduino_csv_headers": ["frame_number", "elapsed", "camera_timestamp", "fr", "fl", "hr", "hl"],
         "sensors": [ "fr", "fl", "hr", "hl"],
     }
+
+    sensors_names =  [ "fr", "fl", "hr", "hl"]
+    n_sensors = 3 # ! fix this because a sensor is brocken
 
     def __init__(self): 
         return # don't need to do anything but we need this func

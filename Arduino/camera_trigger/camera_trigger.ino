@@ -11,9 +11,9 @@ void setup() {
 void loop() {
   digitalWrite(pinCam1, HIGH);
   digitalWrite(pinCam2, HIGH);
-  delay(2);  // <- change this to modify framerate
+  delay(1);  // <- change this to modify framerate
   
   digitalWrite(pinCam1, LOW);
   digitalWrite(pinCam2, LOW);
-  delay(3); // <- change this to modify framerate
+  delay(1); // <- change this to modify framerate
 }

@@ -10,6 +10,14 @@ from utils.file_io_utils import *
 
 
 class SerialComm:
+	# variables to control the commands to the door control board
+	# close_command_on = False  # ! not used for now as we are closing manually
+	# close_initiated = None
+	open_command_on = False # keeps track of if we are sending an open command
+	open_initiated = None # keeps track of the time at which the open command started
+	command_duration = 2  # (s). Once a command has been going for longer than this, stop
+	
+
 	def __init__(self):
 		pass
 
@@ -114,7 +122,12 @@ class SerialComm:
 		self.arduino_inputs = {k:self.arduino.analog[p] for k,p in self.arduino_config["sensors_pins"].items()}
 		for pin in self.arduino_inputs.values(): pin.enable_reporting()
 
-		# start board iteration?
+
+		# Get pins for door open and door close [as analog outputs]
+		self.door_close_pin = self.arduino.get_pin('d:{}:o'.format(self.arduino_config['door_close_pin']))
+		self.door_open_pin = self.arduino.get_pin('d:{}:o'.format(self.arduino_config['door_open_pin']))
+
+		# start board iteration
 		it = util.Iterator(self.arduino)
 		it.start()
 
@@ -133,4 +146,35 @@ class SerialComm:
 
 		append_csv_file(self.arduino_inputs_file, states, self.arduino_config["arduino_csv_headers"])
 
+		# clean commands to the door board
+		self.clean_door_commands()
+
 		return sensor_states
+
+	def clean_door_commands(self):
+		if self.open_command_on:
+			if time.time() - self.open_initiated > self.command_duration:
+				self.open_command_on = False
+				self.open_initiated = None
+				self.door_open_pin.write(0.0)
+				print("Stopped opening door at {}".format(time.time()))
+
+	def open_door(self,):
+		"""
+			[Send a command to open the arena door, if it's not already on]
+		"""
+		if not self.open_command_on:
+			print("Opening door at {}".format(time.time()))
+			self.open_command_on = True
+			self.open_initiated = time.time()
+			self.door_open_pin.write(1.0)
+
+	def live_sensors_control(self, sensors_states):
+		""" [Get's the latest sensor read outs and controls the state of the arena accordingly. E.g. if pressure > th
+				open the door.]
+		"""
+		# Check which sensors are above the threshold
+		above_th = [ch for ch,v in sensors_states.items() if v >= self.live_sensors_ths[ch]]
+
+		if len(above_th) == self.n_sensors:
+			self.open_door() # this will be ignored if door is already being opening
