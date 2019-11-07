@@ -446,6 +446,9 @@ class Editor:
 
         import cv2   # import opencv
         
+        if not os.path.isfile(videofilepath):
+            raise FileExistsError("This file doesnt exist: {}".format(videofilepath))
+
         # Open text file to save selected frames
         fold, name = os.path.split(videofilepath)
 
@@ -579,4 +582,4 @@ class Editor:
 
 if __name__ == "__main__":
     editor = Editor()
-    editor.manual_video_inspect("E:\\Egzona\\100719\\100719_M1L_cam0.mp4")
+    editor.manual_video_inspect("D:\\Egzona\\190719\\190719_M1L_cam0.avi")

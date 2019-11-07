@@ -16,6 +16,7 @@ import matplotlib.patches as patches
 
 from utils.video_utils import Editor as VideoUtils
 from forceplate_config import Config
+from utils.maths.filtering import line_smoother
 
 
 from utils.file_io_utils import *
@@ -71,7 +72,7 @@ class VideoAnalysis(Config, VideoUtils):
         csv_file, video_files = parse_folder_files(self.analysis_config["data_folder"], self.analysis_config["experiment_name"])
         self.data = load_csv_file(csv_file)
         normalized = normalize_channel_data(self.data, self.arduino_config["sensors"])
-
+        smoothed = {k:line_smoother(v, window_size=9, order=5) for k,v in normalized.items()}
         for k, f in video_files.items():
             if not os.path.isfile(f):
                 raise  FileExistsError("videofile doesnt exist: {}".format(f))
@@ -112,9 +113,9 @@ class VideoAnalysis(Config, VideoUtils):
             # Create a figure and save it then close it
             ax0 = plt.subplot2grid((2, 3), (0, 0), colspan=1)
             ax1 = plt.subplot2grid((2, 3), (0, 1), colspan=1)
-            ax2 = plt.subplot2grid((2, 3), (1, 0), colspan=2)
+            ax2 = plt.subplot2grid((2, 3), (1, 0), colspan=3)
             sensorsax = plt.subplot2grid((2, 3), (0, 2), colspan=1, facecolor=[.2, .2, .2])
-            gax = plt.subplot2grid((2, 3), (1, 2), colspan=1, facecolor=[.2, .2, .2])
+            #gax = plt.subplot2grid((2, 3), (1, 2), colspan=1, facecolor=[.2, .2, .2])
 
 
             # Plot frames
@@ -134,11 +135,13 @@ class VideoAnalysis(Config, VideoUtils):
             channel_rectangles_coords = {"hl":(-1, -1), "fr":(0, 0), "fl":(-1, 0), "hr":(0, -1)}
             allc = {}
             for ch, color in self.analysis_config["plot_colors"].items():
-                channel_data = normalized[ch][data_range[0]-50:data_range[1]-50]
+                # Plot sensors traces as KDE
+                channel_data = smoothed[ch][data_range[0]-50:data_range[1]-50]
+                x = np.arange(0, len(channel_data)) 
+                # kde = fit_kde(channel_data, bw=self.analysis_config["smooth_factor"])
+                # ax2.fill_between(x, 0, channel_data, alpha=.15, color=color)
+                ax2.plot(x, channel_data, alpha=1, color=color, label=ch)
 
-                x = np.arange(0, len(channel_data))
-                # ax2.fill_between(x, 0, channel_data, color=color, label=ch, alpha=.3)
-                ax2.plot(x, channel_data, color=color, label=ch, alpha=.8, lw=5)
 
                 # Plot sensors states as colored rectangles
                 channel_data = normalized[ch][data_range[0]:data_range[1]]
@@ -158,26 +161,25 @@ class VideoAnalysis(Config, VideoUtils):
             ax2.add_patch(rect)
             ax2.axvline(50, color=white, ls="--", lw=3, alpha=.3)
 
-
             # Plot the centre of gravity for the next n frames
-            x_pos = (allc["fr"]+allc["hr"]) - (allc["fl"]+allc["hl"])
-            y_pos = (allc["fr"]+allc["fl"]) - (allc["hr"]+allc["hl"])
+            #x_pos = (allc["fr"]+allc["hr"]) - (allc["fl"]+allc["hl"])
+            #y_pos = (allc["fr"]+allc["fl"]) - (allc["hr"]+allc["hl"])
 
-            gax.plot(x_pos, y_pos, alpha=.1, color="w", lw=1)
-            gax.scatter(x_pos, y_pos, alpha=.5, cmap="Reds", c=np.arange(len(y_pos)))
-            gax.scatter(x_pos[0], y_pos[0], s=100, color="g")
-            gax.axvline(0, color="w", ls=":", lw=.5)
-            gax.axhline(0, color="w", ls=":", lw=.5)
+            #gax.plot(x_pos, y_pos, alpha=.1, color="w", lw=1)
+            #gax.scatter(x_pos, y_pos, alpha=.4, cmap="Reds", c=np.arange(len(y_pos)))
+            #gax.scatter(x_pos[0], y_pos[0], s=100, color="g")
+            #gax.axvline(0, color="w", ls=":", lw=.5)
+            #gax.axhline(0, color="w", ls=":", lw=.5)
 
             # Set axes properties
             ax1.set(xticks=[], yticks=[])
             ax0.set(xticks=[], yticks=[])
             style_legend(ax2)
-            ax2.set(xlabel="frames", ylabel="voltage", facecolor=[.2, .2, .2], ylim=[0, 1], xticks=[0, 25, 50, 75, 100], 
+            ax2.set(xlabel="frames", ylabel="voltage", facecolor=[.2, .2, .2], ylim=[0, .38], xticks=[0, 25, 50, 75, 100], 
                     xticklabels=[framen-50, framen-25, framen, framen+25, framen+50])
 
             sensorsax.set(xlim=[-1, 1], ylim=[-1, 1], xticks=[-1, -.5, 0, .5, 1], yticks=[-1, -.5, 0, .5, 1])
-            gax.set(xlim=[-1, 1], ylim=[-1, 1], xticks=[-1, -.5, 0, .5, 1], yticks=[-1, -.5, 0, .5, 1])
+            #gax.set(xlim=[-.4, .4], ylim=[-.4, .4], xticks=[-1, -.4, 0, .4, 1], yticks=[-1, -.4, 0, .4, 1])
 
             # convert figure to numpy array and save to video
             # f.draw()
