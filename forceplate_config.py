@@ -136,7 +136,7 @@ class Config:
             "hl": 4,
         },
         "door_open_pin": 10,
-        "door_close_pin": 11,
+        "tone_pin": 11,
         "arduino_csv_headers": ["frame_number", "elapsed", "camera_timestamp", "fr", "fl", "hr", "hl"],
         "sensors": [ "fr", "fl", "hr", "hl"],
     }

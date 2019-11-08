@@ -17,6 +17,10 @@ class SerialComm:
 	open_initiated = None # keeps track of the time at which the open command started
 	command_duration = 2  # (s). Once a command has been going for longer than this, stop
 	
+	speaker_command_on = False # same as above but for command to speaker arduino
+	speaker_initiated = None 
+	tone_duration = 1 # (s). If you change this change Arduino/speaker.ino accordingly  
+
 
 	def __init__(self):
 		pass
@@ -124,7 +128,7 @@ class SerialComm:
 
 
 		# Get pins for door open and door close [as analog outputs]
-		self.door_close_pin = self.arduino.get_pin('d:{}:o'.format(self.arduino_config['door_close_pin']))
+		self.speaker_commad_pin = self.arduino.get_pin('d:{}:o'.format(self.arduino_config['tone_pin']))
 		self.door_open_pin = self.arduino.get_pin('d:{}:o'.format(self.arduino_config['door_open_pin']))
 
 		# start board iteration
@@ -159,6 +163,26 @@ class SerialComm:
 				self.door_open_pin.write(0.0)
 				print("Stopped opening door at {}".format(time.time()))
 
+		if self.speaker_command_on:
+			if time.time() - self.speaker_initiated > self.tone_duration:
+				self.speaker_command_on = False
+				self.speaker_initiated = None
+				self.speaker_commad_pin.write(0.0)
+				print("Stopped audio at {}".format(time.time()))
+
+				# ! open the door when the audio terminated
+				self.open_door()
+
+	def play_tone(self,):
+		"""
+			[Send a command to the speaker arduino to start playing the tone]
+		"""
+		if not self.speaker_command_on:
+			print("Playing audio at {}".format(time.time()))
+			self.speaker_command_on = True
+			self.speaker_initiated = time.time()
+			self.speaker_commad_pin.write(1.0)	
+
 	def open_door(self,):
 		"""
 			[Send a command to open the arena door, if it's not already on]
@@ -177,4 +201,7 @@ class SerialComm:
 		above_th = [ch for ch,v in sensors_states.items() if v >= self.live_sensors_ths[ch]]
 
 		if len(above_th) == self.n_sensors:
-			self.open_door() # this will be ignored if door is already being opening
+			self.play_tone()
+
+			# open door is now called when "clean_door_commands" terminates the audio stim
+			# self.open_door() # this will be ignored if door is already being opening
