@@ -173,6 +173,8 @@ class SerialComm:
 				# ! open the door when the audio terminated
 				self.open_door()
 
+				a = 1
+
 	def play_tone(self,):
 		"""
 			[Send a command to the speaker arduino to start playing the tone]

@@ -58,7 +58,7 @@ void loop() {
   } else { // manaul controls
   if (SerialUSB.available()){ // need thi to make sure that the serial doesnt stop!
       temp = (char)SerialUSB.read();
-      
+
       // Execute the correct command
       if ((char)temp == 'c' && door_status == 0){  // CLOSING: DOOR GOING DOWN
         close_door();
