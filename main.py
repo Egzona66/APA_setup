@@ -67,7 +67,10 @@ class Main(Camera, SerialComm, Analyzer, LivePlotter, Config):
         self.check_number_frames() # check that the number of frames is correct
 
         self.plot_frame_delays()
-        self.plot_sensors_traces()
+        try:
+            self.plot_sensors_traces()
+        except: 
+            pass
         
 
         self.save_figs()

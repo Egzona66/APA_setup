@@ -17,8 +17,7 @@ int door_status = 0; // keeps track of whether the door is up or down --  0 -> d
 volatile float voltage=0;
 
 int open_door_command_pin = 10;
-
-
+int door_status_pin = 12;
 
 void setup() {
   // put your setup code here, to run once:
@@ -26,6 +25,9 @@ void setup() {
   Dxl.wheelMode(servo_id);
   
   pinMode(open_door_command_pin, INPUT_PULLDOWN);
+  pinMode(door_status_pin, OUTPUT);
+  digitalWrite(door_status_pin, HIGH);  
+
 }
 
 void open_door(){
@@ -48,15 +50,27 @@ void close_door(){
     SerialUSB.println("Ready!!");
 }
 
+void output_door_status(){
+ if (door_status == 1){
+  digitalWrite(door_status_pin, HIGH);  
+ } else {
+  digitalWrite(door_status_pin, LOW);
+}
+}
+
 void loop() {
+  // Writ the door status to the output pin
+  output_door_status();
   
   // see if we get an input voltage telling the door to open
   int door_open_command = digitalRead(open_door_command_pin);
   SerialUSB.println(door_open_command);
+  
+  
   if (door_open_command == 1 && door_status == 1){
     open_door();
   } else { // manaul controls
-  if (SerialUSB.available()){ // need thi to make sure that the serial doesnt stop!
+  if (SerialUSB.available()){ // need this to make sure that the serial doesnt stop!
       temp = (char)SerialUSB.read();
 
       // Execute the correct command

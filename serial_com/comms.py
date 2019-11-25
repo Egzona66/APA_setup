@@ -2,7 +2,7 @@ import serial
 import warnings
 import numpy as np
 from pyfirmata2 import ArduinoMega as Arduino
-from pyfirmata2 import util
+from pyfirmata2 import util, INPUT, OUTPUT
 import sys
 import time
 
@@ -21,6 +21,7 @@ class SerialComm:
 	speaker_initiated = None 
 	tone_duration = 1 # (s). If you change this change Arduino/speaker.ino accordingly  
 
+	door_status = "closed"
 
 	def __init__(self):
 		pass
@@ -126,14 +127,24 @@ class SerialComm:
 		self.arduino_inputs = {k:self.arduino.analog[p] for k,p in self.arduino_config["sensors_pins"].items()}
 		for pin in self.arduino_inputs.values(): pin.enable_reporting()
 
-
 		# Get pins for door open and door close [as analog outputs]
 		self.speaker_commad_pin = self.arduino.get_pin('d:{}:o'.format(self.arduino_config['tone_pin']))
 		self.door_open_pin = self.arduino.get_pin('d:{}:o'.format(self.arduino_config['door_open_pin']))
+		self.door_status_pin = self.arduino.get_pin('d:{}:o'.format(self.arduino_config['door_status_pin']))
+		self.door_status_pin.mode = INPUT
+		self.door_status_pin.enable_reporting()
 
 		# start board iteration
 		it = util.Iterator(self.arduino)
 		it.start()
+
+	def read_door_status(self):
+		ds = self.door_status_pin.read()
+		if ds:
+			self.door_status="closed"
+		else:
+			self.door_status="open"
+		return ds
 
 	def read_arduino_inputs(self):
 		return {k: pin.read() for k,pin in self.arduino_inputs.items()}
@@ -199,11 +210,13 @@ class SerialComm:
 		""" [Get's the latest sensor read outs and controls the state of the arena accordingly. E.g. if pressure > th
 				open the door.]
 		"""
-		# Check which sensors are above the threshold
-		above_th = [ch for ch,v in sensors_states.items() if v >= self.live_sensors_ths[ch]]
 
-		if len(above_th) == self.n_sensors:
-			self.play_tone()
+		if self.door_status == "closed"
+			# Check which sensors are above the threshold
+			above_th = [ch for ch,v in sensors_states.items() if v >= self.live_sensors_ths[ch]]
 
-			# open door is now called when "clean_door_commands" terminates the audio stim
-			# self.open_door() # this will be ignored if door is already being opening
+			if len(above_th) == self.n_sensors:
+				self.play_tone()
+
+				# open door is now called when "clean_door_commands" terminates the audio stim
+				# self.open_door() # this will be ignored if door is already being opening

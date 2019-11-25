@@ -137,6 +137,10 @@ class Camera():
                 # Read the state of the arduino pins and save to file
                 sensor_states = self.read_arduino_write_to_file(grab.TimeStamp)
 
+                # Read the state of the door status pins
+                door_status = self.read_door_status()
+                print("door status {}".format(self.door_status))
+
                 # Threshold sensor data and control door of the arena
                 self.live_sensors_control(sensor_states)
 
