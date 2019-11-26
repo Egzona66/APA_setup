@@ -137,7 +137,7 @@ class Config:
         },
         "door_open_pin": 10,
         "tone_pin": 11,
-        "door_status_pin": 12,
+        "door_status_pin": 8, # analog open
         "arduino_csv_headers": ["frame_number", "elapsed", "camera_timestamp", "fr", "fl", "hr", "hl"],
         "sensors": [ "fr", "fl", "hr", "hl"],
     }
