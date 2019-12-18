@@ -36,8 +36,12 @@ class Camera():
         # Open FFMPEG camera writers if we are saving to video
         if self.save_to_video: 
             for i, file_name in enumerate(self.video_files_names):
+                w, h = self.camera_config["acquisition"]['frame_width'], self.camera_config["acquisition"]['frame_height']
+                indict = self.camera_config['inputdict'].copy()
+                indict['-s'] = '{}x{}'.format(w,h)
+                self.cam_writers[i] = skvideo.io.FFmpegWriter(file_name, outputdict=self.camera_config["outputdict"], inputdict=indict)
+
                 print("Writing to: {}".format(file_name))
-                self.cam_writers[i] = skvideo.io.FFmpegWriter(file_name, outputdict=self.camera_config["outputdict"])
         else:
             self.cam_writers = {str(i):None for i in np.arange(self.camera_config["n_cameras"])}
 

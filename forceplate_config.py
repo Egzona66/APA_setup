@@ -25,7 +25,7 @@ class Config:
 
     # * Check that these options are correct
     com_port = "COM5"  # port of the arduino running Firmata for data acquisition
-    acquisition_framerate = 400  # fps of camera triggering -> NEED TO SPECIFY SLEEP TIME IN ARDUINO for frame triggering
+    acquisition_framerate = 600  # fps of camera triggering -> NEED TO SPECIFY SLEEP TIME IN ARDUINO for frame triggering
 
 
     overwrite_files = True # ! ATTENTION: this is useful for debug but could lead to overwriting experimental data
@@ -72,6 +72,8 @@ class Config:
                     "-framerate": "10", #   output video framerate 
                     # TODO this doesnt work FPS
                 },
+
+
     }
 
 
@@ -98,28 +100,39 @@ class Config:
         "trigger_mode": True,  # hardware triggering
         "acquisition": {    
             "exposure": "1000",
-            "frame_width": "480",  # must be a multiple of 32
-            "frame_height": "320", # must be a multiple of 32
+            "frame_width": "288",  # must be a multiple of 32
+            "frame_height": "288", # must be a multiple of 32
             "gain": "12",
-            "frame_offset_y": "544",
-            "frame_offset_x": "704",
+            "frame_offset_y": "612",
+            "frame_offset_x": "672",
         },
 
 
         # all commands and options  https://gist.github.com/tayvano/6e2d456a9897f55025e25035478a3a50
         # pixel formats https://ffmpeg.org/pipermail/ffmpeg-devel/2007-May/035617.html
 
-        "outputdict":{ # for ffmpeg
-            "-vcodec": "mpeg4",   #   low fps high res
-            '-crf': '0',
-            '-preset': 'slow',  # TODO check this
-            '-pix_fmt': 'gray',  # yuvj444p
-            "-cpu-used": "1",  # 0-8. defailt 1, higher leads to higher speed and lower quality
-            # "-r": "100", #   output video framerate 
-            "-flags":"gray",
-            # "-ab":"0",
-            # "-force_fps": "100"
+        # "outputdict":{ # for ffmpeg
+        #     "-vcodec": "mpeg4",   #   low fps high res
+        #     '-crf': '0',
+        #     '-preset': 'slow',  # TODO check this
+        #     '-pix_fmt': 'gray',  # yuvj444p
+        #     "-cpu-used": "1",  # 0-8. defailt 1, higher leads to higher speed and lower quality
+        #     # "-r": "100", #   output video framerate 
+        #     "-flags":"gray",
+        #     # "-ab":"0",
+        #     # "-force_fps": "100"
+        # },
+        "outputdict":{
+            "-c:v": 'libx264',   #   low fps high res
+            "-crf": '17',
+            "-preset": 'ultrafast',
+            "-pix_fmt": 'yuv444p',
+            "-r": str(acquisition_framerate),
         },
+
+        "inputdict":{
+            "-r": str(acquisition_framerate),
+        }
     }
 
     """
