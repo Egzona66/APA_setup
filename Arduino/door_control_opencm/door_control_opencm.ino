@@ -33,7 +33,7 @@ void setup() {
 void open_door(){
    //OPENING: DOOR GOING UP
     SerialUSB.println("Moving the door UP");
-    Dxl.goalSpeed(servo_id, speed | 0x400); //forward
+    Dxl.goalSpeed(servo_id, speed); //forward
     delay(duration); // waiting for door to open
     Dxl.goalSpeed(servo_id, 0); // stopping the servo
     door_status = 0;
@@ -43,7 +43,7 @@ void open_door(){
 void close_door(){
     // CLOSING: DOOR GOING DOWN
     SerialUSB.println("Moving the door DOWN");
-    Dxl.goalSpeed(servo_id, speed); //forward
+    Dxl.goalSpeed(servo_id, speed | 0x400); //forward
     delay(duration); // waiting for door to open
     Dxl.goalSpeed(servo_id, 0); // stopping the servo
     door_status = 1; 

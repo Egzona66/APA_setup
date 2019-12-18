@@ -161,6 +161,10 @@ class SerialComm:
 		states["elapsed"] = now - self.exp_start_time
 		states["camera_timestamp"] = camera_timestamp
 
+		# Get if playing tone or opening door
+		states['tone_playing'] = self._tone_command
+		states['door_opening'] = self._door_command
+
 		append_csv_file(self.arduino_inputs_file, states, self.arduino_config["arduino_csv_headers"])
 
 		# clean commands to the door board
@@ -170,11 +174,16 @@ class SerialComm:
 
 	def clean_door_commands(self):
 		if self.open_command_on:
+			self._door_command = 0
 			if time.time() - self.open_initiated > self.command_duration:
 				self.open_command_on = False
 				self.open_initiated = None
 				self.door_open_pin.write(0.0)
+				
 				print("Stopped opening door at {}".format(time.time()))
+		else:
+			self._door_command = 0
+
 
 		if self.speaker_command_on:
 			if time.time() - self.speaker_initiated > self.tone_duration:
@@ -182,11 +191,14 @@ class SerialComm:
 				self.speaker_initiated = None
 				self.speaker_commad_pin.write(0.0)
 				print("Stopped audio at {}".format(time.time()))
+				self._tone_command = -1
 
 				# ! open the door when the audio terminated
 				self.open_door()
-
-				a = 1
+			else:
+				self._tone_command = 0
+		else: 
+			self._tone_command = 0
 
 	def play_tone(self,):
 		"""
@@ -195,6 +207,7 @@ class SerialComm:
 		if not self.speaker_command_on:
 			print("Playing audio at {}".format(time.time()))
 			self.speaker_command_on = True
+			self._tone_command = 1
 			self.speaker_initiated = time.time()
 			self.speaker_commad_pin.write(1.0)	
 
@@ -207,6 +220,7 @@ class SerialComm:
 			self.open_command_on = True
 			self.open_initiated = time.time()
 			self.door_open_pin.write(1.0)
+			self._door_command = 1
 
 	def live_sensors_control(self, sensors_states):
 		""" [Get's the latest sensor read outs and controls the state of the arena accordingly. E.g. if pressure > th
