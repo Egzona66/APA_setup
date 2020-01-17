@@ -11,12 +11,9 @@ class Config:
     # ! fix this (arduino config) when the sensor is fixed:
     #     n_sensors = 3 # ! fix this because a sensor is brocken
 
-
-
-
     # ! Change these for every recording
-    experiment_folder = "E:\\Egzona\\160119(training)"   # ? This should be changed for everyexperiment to avoid overwriting 
-    experiment_name = "M_2L"  # should be something like YYMMDD_MOUSEID, all files for an experiment will start with this name
+    experiment_folder = "E:\\Egzona"   # ? This should be changed for everyexperiment to avoid overwriting 
+    experiment_name = "fedetest"  # should be something like YYMMDD_MOUSEID, all files for an experiment will start with this name
     experiment_duration = 5*60  # acquisition duration in seconds, alternatively set as None
 
     # * Live video frames display and sensors data plotting
@@ -29,8 +26,6 @@ class Config:
 
 
     overwrite_files = True # ! ATTENTION: this is useful for debug but could lead to overwriting experimental data
-    # So this number is just indicative but the true acquisition rate depends on the trigger arduino
-
     save_to_video = True  # ! decide if you want to save the videos or not
 
     """
@@ -43,7 +38,7 @@ class Config:
                         "fl":.06,
                         "hr":.06,
                         "hl":.06}
-
+    time_on_sensors = 500 # mouse has to be on all sensors this number of ms before the door opens
 
     """
         ############## POST-HOC ANALYSIS  ####################

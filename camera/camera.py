@@ -93,11 +93,10 @@ class Camera():
         start = now
 
         # Given that we did 100 frames in elapsedtime, what was the framerate
-        time_per_frame = (elapsed / 100) * 1000
+        time_per_frame = (elapsed / 500) * 1000
         fps = round(1000  / time_per_frame, 2) 
         
-        print("Tot frames: {}, current fps: {}, desired fps {}.".format(
-                    self.frame_count, fps, self.acquisition_framerate))
+        print("     tot frames: {}, current fps: {}".format(self.frame_count, fps))
         return start
 
     def grab_frames(self):
@@ -131,7 +130,7 @@ class Camera():
         # self.grab.GrabSucceeded is false when a camera doesnt get a frame -> exit the loop
         while True:
             try:
-                if self.frame_count % 100 == 0:  # Print the FPS in the last 100 frames
+                if self.frame_count % 500 == 0:  # Print the FPS in the last 100 frames
                     if self.frame_count == 0: start = time.time()
                     else: start = self.print_current_fps(start)
 
@@ -159,7 +158,9 @@ class Camera():
 
                 # Stop if reached max frames
                 if max_frames is not None:
-                        if self.frame_count >= max_frames: break
+                        if self.frame_count >= max_frames: 
+                            print("Reached the end of the experiment.")
+                            break
 
                 # stop if enough time has elapsed
                 if self.experiment_duration is not None:

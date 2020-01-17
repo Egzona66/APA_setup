@@ -22,9 +22,16 @@ class SerialComm:
 	tone_duration = 1 # (s). If you change this change Arduino/speaker.ino accordingly  
 
 	door_status = "closed"
+	mouse_on_sensors = False  # it's true if the mouse is currently on all 4 sensors
+	mouse_stepped_on_sensors = 0 # records at what time the mouse got on the sensors (in ms)
+
+	t0 = time.time()
 
 	def __init__(self):
 		pass
+
+	def get_time(self):
+		return round(time.time() - self.t0, 2)
 
 	def get_available_ports(self):
 		if sys.platform.startswith('win'):
@@ -180,21 +187,21 @@ class SerialComm:
 				self.open_initiated = None
 				self.door_open_pin.write(0.0)
 				
-				print("Stopped opening door at {}".format(time.time()))
+				print("Stopped opening door at {}s".format(self.get_time()))
 		else:
 			self._door_command = 0
-
 
 		if self.speaker_command_on:
 			if time.time() - self.speaker_initiated > self.tone_duration:
 				self.speaker_command_on = False
 				self.speaker_initiated = None
 				self.speaker_commad_pin.write(0.0)
-				print("Stopped audio at {}".format(time.time()))
+				print("Stopped audio at {}s".format(self.get_time()))
 				self._tone_command = -1
 
 				# ! open the door when the audio terminated
-				self.open_door()
+				# ? now the door starts opening at the same time as when the speaker comes on
+				# self.open_door()
 			else:
 				self._tone_command = 0
 		else: 
@@ -205,7 +212,7 @@ class SerialComm:
 			[Send a command to the speaker arduino to start playing the tone]
 		"""
 		if not self.speaker_command_on:
-			print("Playing audio at {}".format(time.time()))
+			print("Playing audio at {}s".format(self.get_time()))
 			self.speaker_command_on = True
 			self._tone_command = 1
 			self.speaker_initiated = time.time()
@@ -216,23 +223,51 @@ class SerialComm:
 			[Send a command to open the arena door, if it's not already on]
 		"""
 		if not self.open_command_on:
-			print("Opening door at {}".format(time.time()))
+			print("Opening door at {}s".format(self.get_time()))
 			self.open_command_on = True
+			self._door_command = 1
 			self.open_initiated = time.time()
 			self.door_open_pin.write(1.0)
-			self._door_command = 1
 
 	def live_sensors_control(self, sensors_states):
 		""" [Get's the latest sensor read outs and controls the state of the arena accordingly. E.g. if pressure > th
 				open the door.]
+
+			The sensors are checked only if the door is closed which means that the mouse is 
+			on the right part of the arena.
+
+			If the mouse applies enough force to all four sensors, a timer is started.
+			If the mouse doesn't get off the sensors and enoughtime has elapsed, the door is opened
+			and a tone is played.
 		"""
 
-		if self.door_status == "closed":
+		if self.door_status == "closed" and not self.open_command_on:
 			# Check which sensors are above the threshold
 			above_th = [ch for ch,v in sensors_states.items() if v >= self.live_sensors_ths[ch]]
 
 			if len(above_th) == self.n_sensors:
-				self.play_tone()
+				# Mouse is now on sensors
+				if not self.mouse_on_sensors: 
+					# Mouse just stepped onto sensors
+					self.mouse_on_sensors = True
+					self.mouse_stepped_on_sensors = time.time()
+					print("Mouse on sensors at {}s".format(self.get_time()))
 
-				# open door is now called when "clean_door_commands" terminates the audio stim
-				# self.open_door() # this will be ignored if door is already being opening
+
+				if (time.time()) - self.mouse_stepped_on_sensors > self.time_on_sensors/1000:
+					# Mouse has been on the sensors for long enough					
+					self.play_tone()
+					self.open_door()
+			else: 
+				# Mouse not on sensors
+				if self.mouse_on_sensors:
+					print("Mouse off sensors at {}s".format(self.get_time()))
+				self.mouse_on_sensors = False
+		else:
+			# Check when the mouse gets off the sensors but don't do anything else
+			above_th = [ch for ch,v in sensors_states.items() if v >= self.live_sensors_ths[ch]]
+			if len(above_th) < self.n_sensors:
+				if self.mouse_on_sensors:
+					print("Mouse off sensors at {}s".format(self.get_time()))
+				self.mouse_on_sensors = False
+				

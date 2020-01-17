@@ -100,7 +100,7 @@ class Main(Camera, SerialComm, Analyzer, LivePlotter, Config):
 
         try:
             self.stream_videos() # <- t
-        except (KeyboardInterrupt, ValueError) as e:
+        except Exception as e:
             print("Acquisition terminted with error: ", e)
             self.terminate_experiment()
 
