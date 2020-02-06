@@ -14,11 +14,10 @@ class Inspector(Config, VideoUtils):
         Config.__init__(self)
         VideoUtils.__init__(self)
 
-        self.manual_video_inspect(video_to_inspect)
-
+        self.manual_video_inspect(video_to_inspect, rescale=4)
 
 if __name__ == "__main__":
-    videofile = "D:\\Egzona\\310719\\310719_M1L2_cam0.avi"  # * <--- path to the video to analyse 
+    videofile = "D:\\Egzona\\2020\\29012020(training)\\M_2R_3_cam0.avi"  # * <--- path to the video to analyse 
     inspector = Inspector(videofile)
 
 

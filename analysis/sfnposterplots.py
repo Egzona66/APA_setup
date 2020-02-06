@@ -14,7 +14,7 @@ from scipy.cluster.hierarchy import dendrogram, linkage, fcluster
 from scipy.spatial import distance
 
 
-from utils.video_utils import Editor as VideoUtils
+#from utils.video_utils import Editor as VideoUtils
 from forceplate_config import Config
 from utils.maths.filtering import line_smoother
 from utils.maths.math_utils import get_n_colors
@@ -35,8 +35,8 @@ import matplotlib.patches as patches
 
 # %%
 # Get experiments folders
-main_fld = "D:\\Egzona"
-sub_flds = {"14":os.path.join(main_fld, "140819"),"31":os.path.join(main_fld, "310719"), "13":os.path.join(main_fld, "130819")} 
+main_fld = "D:\\Egzona\\2020"
+sub_flds = {"21":os.path.join(main_fld, "21012020")},#"31":os.path.join(main_fld, "310719"), "13":os.path.join(main_fld, "130819")} 
 #"18":os.path.join(main_fld, "180719"), "19":os.path.join(main_fld, "190719") 
 #framesfile = os.path.join(main_fld, "clipsframes.csv")
 
@@ -51,7 +51,7 @@ df = pd.read_csv('D:\Egzona\clipsframes.csv')
 
 
 # ! important params
-target_fps = 500
+target_fps = 600
 start_shift = 150 # number of milliseconds to take before what is specified in the CSV file
 
 # Load data for each video
@@ -273,29 +273,58 @@ sax = plt.subplot2grid(grid, (0, 0))
 tax = plt.subplot2grid(grid, (1, 0))
 
 # ! PARAMS
-pcutoff = 0.1
+pcutoff = 0.3
 
-colors = {  'back right paw':'#F9A31A',
-            'back left paw':'#F37822',
-            'front right paw':'#72C9C3',
-            'front left paw':'#FDE85C',
-            'nose':'#283A8C',
+colors = {  'back right paw':'blues',
+            'back left paw':'greens',
+            'front right paw':'reds',
+            'front left paw':'oranges',
+            'nose':'Purples',
+
 }
- 
+
+cmaps = {  'back right paw':'Blues',
+            'back left paw':'Greens',
+            'front right paw':'Reds',
+            'front left paw':'Oranges',
+            'nose':'Purples',
+
+}
+
 sidecolors = {
-            'nose': '#283A8C',
-            'back left paw': '#ED3426',
-            'back left toes': '#F37822', 
-            'front left paw': '#FDE85C',
-            'front left toes': '#DAE023',
-            'front right toes': '#DAE023',
-            'front right paw': '#FDE85C',
-            'back right paw': '#ED3426',
-            'back right toes': '#F37822',
+            # 'nose': '#283A8C',
+            'back left paw': 'Blues',
+            'back left toes': 'Greens', 
+            'front left paw': 'Reds',
+            'front left toes': 'YlOrBr',
+            'front right toes': 'Reds',
+            'front right paw': 'YlOrBr',
+            'back right paw': 'Blues',
+            'back right toes': 'Greens',
+            'neck': 'Purples',
+            'back': 'RdPu',
+            # 'tail':'#A02221',
             }
+
+sidecmaps = {
+            # 'nose': '#283A8C',
+            'back left paw': 'Blues',
+            'back left toes': 'Greens', 
+            'front left paw': 'Reds',
+            'front left toes': 'YlOrBr',
+            'front right toes': 'Reds',
+            'front right paw': 'YlOrBr',
+            'back right paw': 'Blues',
+            'back right toes': 'Greens',
+            'neck':  'Purples',
+            'back': 'RdPu',
+            # 'tail':'#A02221',
+}
+
 
 frame_center = [240, 160]
 
+example_tracking = {}
 for vid in vid_names:
     vidmeta = metadata.loc[metadata.Video == vid].iloc[0]
 
@@ -316,6 +345,7 @@ for vid in vid_names:
 
     for bp in top_bps:
         if bp not in list(colors.keys()): continue
+
         Index = top[tscorer][bp]['likelihood'].values > pcutoff
         x, y = top[tscorer][bp]['x'].values[Index], top[tscorer][bp]['y'].values[Index]
 
@@ -328,11 +358,13 @@ for vid in vid_names:
             col = [.7, .7, .7]
             zorder = 4
             alpha = 1
+            tax.scatter(deltax+150, deltay+125, color=col, alpha=alpha, zorder=zorder)
         else:
             col = colors[bp]
             zorder=99
             alpha=1
-        tax.scatter(deltax+150, deltay+125, color=col, alpha=alpha, zorder=zorder)
+            tax.scatter(deltax+150, deltay+125, c=np.arange(len(deltax)), cmap=cmaps[bp], alpha=alpha, zorder=zorder)
+        
 
         
     # SIDE
@@ -342,7 +374,7 @@ for vid in vid_names:
 
     for bp in side_bps:
         if bp not in list(sidecolors.keys()): continue
-        
+
         if back:
             if "left" in bp: continue
         else: 
@@ -361,12 +393,17 @@ for vid in vid_names:
             col = [.7, .7, .7]
             zorder = 4
             alpha = 1
+            sax.scatter(deltax+150, deltay+460, color=col, alpha=alpha, zorder=zorder)
+
         else:
             col = sidecolors[bp]
-            zorder=99
+            zorder=999
             alpha=1
+            example_tracking[bp] = [deltax+150, deltay+460]
+            sax.scatter(deltax+150, deltay+460, c=np.arange(len(deltax)), cmap=sidecmaps[bp], alpha=alpha, zorder=zorder)
 
-        sax.scatter(deltax+150, deltay+460, color=col, alpha=alpha, zorder=zorder)
+
+
 
 
     # sax.invert_yaxis()
@@ -374,7 +411,43 @@ for vid in vid_names:
 
     for ax in [sax, tax]:
         ax.set(xlim=[0, 480], ylim=[0, 320])
+
+
+
+
+
 #%%
 
+skeleton1 = [
+    ['neck', 'back'],
+    ['back', 'back right paw'],
+    ['back right paw', 'back right toes'],
+]
+
+skeleton2= [
+    ['neck', 'back'],
+    ['front right paw', 'front right toes'],
+    ['front right paw', 'back']
+]
+
+t = np.arange(0, 400, 5)
+
+for frame in t:
+    for bp1, bp2 in skeleton1:
+        try:
+            x1, y1 = example_tracking[bp1][0][frame], example_tracking[bp1][1][frame]
+            x2, y2 = example_tracking[bp2][0][frame], example_tracking[bp2][1][frame]
+
+            sax.plot([x1,x2], [y1, y2], color="k", lw=3, alpha=.3, zorder=99)
+        except:
+            pass
+    for bp1, bp2 in skeleton2:
+        try:
+            x1, y1 = example_tracking[bp1][0][frame], example_tracking[bp1][1][frame]
+            x2, y2 = example_tracking[bp2][0][frame], example_tracking[bp2][1][frame]
+
+            sax.plot([x1,x2], [y1, y2], color="m", lw=3, alpha=.3, zorder=99)
+        except:
+            pass
 
 #%%

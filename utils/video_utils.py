@@ -425,7 +425,7 @@ class Editor:
         cap.set(1, frame)
 
     @staticmethod
-    def manual_video_inspect(videofilepath):
+    def manual_video_inspect(videofilepath, rescale=4):
         """[loads a video and lets the user select manually which frames to show]
 
                 Arguments:
@@ -439,9 +439,7 @@ class Editor:
         """        
         def get_selected_frame(cap, show_frame):
                 cap.set(1, show_frame)
-                ret, frame = cap.read() # read the first frame
-                
-                
+                ret, frame = cap.read() # read the first frame 
                 return frame
 
         import cv2   # import opencv
@@ -474,6 +472,7 @@ class Editor:
         frame = get_selected_frame(cap, show_frame)
 
         while True:
+                frame = cv2.resize(frame, (frame.shape[0]*rescale, frame.shape[1]*rescale))
                 cv2.imshow('frame', frame)
 
                 k = cv2.waitKey(10)

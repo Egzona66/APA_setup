@@ -112,7 +112,7 @@ class VideoAnalysis(Config, VideoUtils):
             framen = int(framen)
             # Create a figure and save it then close it
             ax0 = plt.subplot2grid((2, 3), (0, 0), colspan=1)
-            ax1 = plt.subplot2grid((2, 3), (0, 1), colspan=1)
+            #ax1 = plt.subplot2grid((2, 3), (0, 1), colspan=1)
             ax2 = plt.subplot2grid((2, 3), (1, 0), colspan=3)
             sensorsax = plt.subplot2grid((2, 3), (0, 2), colspan=1, facecolor=[.2, .2, .2])
             #gax = plt.subplot2grid((2, 3), (1, 2), colspan=1, facecolor=[.2, .2, .2])
@@ -120,26 +120,26 @@ class VideoAnalysis(Config, VideoUtils):
 
             # Plot frames
             ret, frame0 = caps["cam0"].read()
-            ret, frame1 = caps["cam1"].read()
+            #ret, frame1 = caps["cam1"].read()
 
             if not ret: 
                 raise ValueError("Could not read frame number: {} from videos\n {}".format(framen, video_files))
 
             downsample = 2
             ax0.imshow(frame0[::downsample,::downsample], interpolation="nearest")
-            ax1.imshow(frame1[::downsample,::downsample][::-1, ::-1], interpolation="nearest")
+            #ax1.imshow(frame1[::downsample,::downsample][::-1, ::-1], interpolation="nearest")
 
 
             # Plot sensors traces
             data_range = [int(framen), int(framen+plot_datapoints)]
-            channel_rectangles_coords = {"hl":(-1, -1), "fr":(0, 0), "fl":(-1, 0), "hr":(0, -1)}
+            channel_rectangles_coords = {"fr":(0, 0), "fl":(-1, 0)}
             allc = {}
             for ch, color in self.analysis_config["plot_colors"].items():
                 # Plot sensors traces as KDE
                 channel_data = smoothed[ch][data_range[0]-50:data_range[1]-50]
                 x = np.arange(0, len(channel_data)) 
                 # kde = fit_kde(channel_data, bw=self.analysis_config["smooth_factor"])
-                # ax2.fill_between(x, 0, channel_data, alpha=.15, color=color)
+                #ax2.fill_between(x, 0, channel_data, alpha=.15, color=color)
                 ax2.plot(x, channel_data, alpha=1, color=color, label=ch)
 
 
@@ -159,7 +159,7 @@ class VideoAnalysis(Config, VideoUtils):
             # Decorate sensors ax
             rect = patches.Rectangle([48, 0], 4, 1, linewidth=1, edgecolor=white, facecolor=white, alpha=.5)
             ax2.add_patch(rect)
-            ax2.axvline(50, color=white, ls="--", lw=3, alpha=.3)
+            ax2.axvline(40, color=white, ls="--", lw=3, alpha=.3)
 
             # Plot the centre of gravity for the next n frames
             #x_pos = (allc["fr"]+allc["hr"]) - (allc["fl"]+allc["hl"])
@@ -172,7 +172,7 @@ class VideoAnalysis(Config, VideoUtils):
             #gax.axhline(0, color="w", ls=":", lw=.5)
 
             # Set axes properties
-            ax1.set(xticks=[], yticks=[])
+            #ax1.set(xticks=[], yticks=[])
             ax0.set(xticks=[], yticks=[])
             style_legend(ax2)
             ax2.set(xlabel="frames", ylabel="voltage", facecolor=[.2, .2, .2], ylim=[0, .38], xticks=[0, 25, 50, 75, 100], 

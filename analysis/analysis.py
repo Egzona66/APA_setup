@@ -152,14 +152,14 @@ Videos framerates:      {}, {}
             x = np.arange(0, len(channel_data))
             if multiple_axes:
                 ax = axarr[1]
-                ax.set(title="Sensor:{}".format(ch), xlabel="frames", ylabel="Volts", facecolor=[.5, .5, .5], ylim=[0,1])
+                ax.set(title="Sensor:{}".format(ch), xlabel="frames", ylabel="Volts", facecolor=[.5, .5, .5], ylim=[0,0.2])
         
             if shaded: ax.fill_between(x, 0, channel_data, color=color, label=ch, alpha=.3)
             else: ax.plot(channel_data, color=color, lw=2, label=ch)
             
         if not multiple_axes:
             ax.legend()
-            ax.set(title="Raw Force Sensor Data", xlabel="frames", ylabel="Volts", facecolor=[.5, .5, .5], ylim=[0,1])
+            ax.set(title="Raw Force Sensor Data", xlabel="frames", ylabel="Volts", facecolor=[.5, .5, .5], ylim=[0,0.2])
 
         if figname is None: figname = "sensors_traces"
         self.figures[self.experiment_name+"_{}.png".format(figname)] = f
@@ -183,15 +183,15 @@ if __name__ == "__main__":
     # ? See function definition for more details about what the attributes do 
     """
         Example call to analyzer.plot_sensor_traces with each channel on a separate plot, showing the raw data for frames [100 - 200] 
-        and giving the figure the name "nunuplot". The figure is then saved in the experiment folder with the figurename
+        and giving the figure the name "plot". The figure is then saved in the experiment folder with the figurename
 
-        >>> analyzer.plot_sensors_traces(multiple_axes=True, normalized=False, frames_range=[100, 200], figname="nunuplot")
+        >>> analyzer.plot_sensors_traces(multiple_axes=True, normalized=False, frames_range=[100, 200], figname="plot")
         >>> analyzer.save_figs()
 
         Then if you want to display the figure
         >>> plt.show()
     """
     
-    analyzer.plot_sensors_traces(shaded=False, multiple_axes=False, normalized=False, frames_range=[3694, 3708], figname="nunuplot")
+    analyzer.plot_sensors_traces(shaded=False, multiple_axes=False, normalized=True, frames_range=[86081, 86261], figname="plot")
     analyzer.save_figs()
     plt.show()

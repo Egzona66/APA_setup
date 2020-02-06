@@ -7,8 +7,8 @@ class Config:
         ############## EXPERIMENT CONFIG  ####################
     """
     # ! Change these for every recording
-    experiment_folder = "E:\\Egzona\\190719"   # ? This should be changed for everyexperiment to avoid overwriting 
-    experiment_name = "190719_Mnone"  # should be something like YYMMDD_MOUSEID, all files for an experiment will start with this name
+    experiment_folder = "D:\\Egzona\\2020\\21012020(training)"   # ? This should be changed for every experiment to avoid overwriting 
+    experiment_name = "21012020_M_1L"  # should be something like YYMMDD_MOUSEID, all files for an experiment will start with this name
     experiment_duration = 5*60  # acquisition duration in seconds, alternatively set as None
 
     # * Live video frames display and sensors data plotting
@@ -17,7 +17,7 @@ class Config:
 
     # * Check that these options are correct
     com_port = "COM5"  # port of the arduino running Firmata for data acquisition
-    acquisition_framerate = 200  # fps of camera triggering -> NEED TO SPECIFY SLEEP TIME IN ARDUINO for frame triggering
+    acquisition_framerate = 600  # fps of camera triggering -> NEED TO SPECIFY SLEEP TIME IN ARDUINO for frame triggering
 
 
     overwrite_files = False # ! ATTENTION: this is useful for debug but could lead to overwriting experimental data
@@ -30,18 +30,18 @@ class Config:
         ############## POST-HOC ANALYSIS  ####################
     """
     analysis_config = {
-        "data_folder": "D:\\Egzona\\Plot-videos DLC", # where the data to analyse are stored
-        "experiment_name": "140819_M1R2",
+        "data_folder": "D:\\Egzona\\2020\\29012020(training)", # where the data to analyse are stored
+        "experiment_name": "M_1R",
         "plot_colors": { "fr":magenta, 
-                        "fl":blue, 
-                        "hr":red, 
-                        "hl":green},
+                        "fl":blue}, 
+                        #"hr":red, 
+                        #"hl":green},
 
         # * for composite video
         # ? run video_analysis.py
         "start_clip_time_s": None, # ? Create clips start at this point, in SECONDS
-        "start_clip_time_frame": 1, # ? Create clips start at this point, in FRAMES
-        "clip_n_frames": 100 , # duration of the clip in frames
+        "start_clip_time_frame": 9799, # ? Create clips start at this point, in FRAMES
+        "clip_n_frames": 180 , # duration of the clip in frames
         "clip_name":"test", 
 
         "outputdict":{ # for ffmpeg

@@ -13,8 +13,8 @@ def parse_folder_files(folder, exp_name):
             csv_file = os.path.join(folder, f)
         elif "cam0" in f and "txt" not in f:
             video_files["cam0"] = os.path.join(folder, f)
-        elif "cam1" in f and "txt" not in f:
-            video_files["cam1"] = os.path.join(folder, f)
+        #elif "cam1" in f and "txt" not in f:
+            #video_files["cam1"] = os.path.join(folder, f)
     try:
         return csv_file, video_files
     except:

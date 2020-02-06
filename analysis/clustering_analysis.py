@@ -27,16 +27,16 @@ from utils.matplotlib_config import *
 from utils.plotting_utils import *
 from utils.constants import *
 
-from analysis.calibrate_sensors import Calibration
+from calibrate_sensors import Calibration
 
 # %matplotlib inline
 
 # %%
 # Get experiments folders
-main_fld = "D:\\Egzona"
-sub_flds = {"14":os.path.join(main_fld, "140819"),"31":os.path.join(main_fld, "310719"), "13":os.path.join(main_fld, "130819")} 
+main_fld = "D:\\Egzona\\2020"
+sub_flds = {"21":os.path.join(main_fld, "21012020"),"23":os.path.join(main_fld, "23012020"), "24":os.path.join(main_fld, "24012020"), "28":os.path.join(main_fld, "28012020"), "29":os.path.join(main_fld, "29012020")} 
 #"18":os.path.join(main_fld, "180719"), "19":os.path.join(main_fld, "190719") 
-#framesfile = os.path.join(main_fld, "clipsframes.csv")
+framesfile = os.path.join(main_fld, "clipsframes_FP3.csv")
 
 # %%
 # Get calibration
@@ -45,33 +45,35 @@ calibration = Calibration()
 # %%
 # Get data
 # Load frames times
-df = pd.read_csv('D:\Egzona\clipsframes.csv')
+df = pd.read_csv('D:\Egzona\clipsframes_FP3.csv')
 
 
 # ! important params
-target_fps = 500
+target_fps = 600
 
 # Load data for each video
 data = {"name":[], "fr":[], "fl":[], "hr":[], "hl":[], "cg":[], "start":[], "end":[]}
 for i, row in df.iterrows():
     try:
         fld = sub_flds[row.Video[:2]]
-    except:
-        continue
+    except Exception as e:  
+        raise ValueError("Could not find folder! {}".format(e))
 
     csv_file, video_files = parse_folder_files(fld, row.Video)
     if csv_file is None: 
-        continue
+        raise ValueError("cvs file is None")
     else:
         print("Loading file: {}  - -for video: {}".format(csv_file, row.Video))
     sensors_data = load_csv_file(csv_file)
 
     # Get baselined and calibrated sensors data
     sensors = ["fr", "fl", "hr", "hl"]
-    calibrated_sensors = {ch:calibration.correct_raw(baseline_sensor_data(volts), ch) for ch, volts in sensors_data.items() if ch in sensors}
+    # calibrated_sensors = {ch:calibration.correct_raw(baseline_sensor_data(volts), ch) 
+    #                             for ch, volts in sensors_data.items() if ch in sensors}
+    calibrated_sensors = sensors_data
  
     # ? Get resampled data (from frames to ms)
-    fps = int(row["Frame rate"])
+    fps = 600 # int(row["Frame rate"])
     secs = len(calibrated_sensors["fr"])/fps
     n_samples = int(secs * target_fps)
     calibrated_sensors = {ch:upsample_timeseries(data, n_samples) for ch, data in calibrated_sensors.items()}
@@ -81,18 +83,13 @@ for i, row in df.iterrows():
     x = (calibrated_sensors["fr"]+calibrated_sensors["hr"]) - (calibrated_sensors["fl"]+calibrated_sensors["hl"])
 
     # Correct for direction of motion and first paw used
-    if "b" in row.Direction.lower():
-        y = -y
-        x = -x
-    if "l" in row.Paw.lower():
-        x = -x
-    else: 
-        pass
+    # if "l" in row.Paw.lower():
+    #     x = -x
+
      
     # Get center of gravity trace
-    #end = row.End + 0  # ! adding extra frames
-    start= int(np.floor(row.Start/fps*target_fps))
-    end = int(start + target_fps*.6)
+    end = row.End 
+    start= int(row.Start)
     x,y  = x[start:end], y[start:end]
     print("Start frame: {} - end frame: {} - {}  nframes".format(start, end, (end - start)))
     cg = np.vstack([x, y])
@@ -104,13 +101,12 @@ for i, row in df.iterrows():
             raise ValueError(ch)
         data[ch].append(calibrated_sensors[ch][start:end])
     data["cg"].append(cg.T)
-
     data["start"].append(start)
     data["end"].append(end)
 
 data = pd.DataFrame.from_dict(data)
 print("Loaded data")
-# print(data)
+print(data)
 
 # %%
 # Plot stuff
@@ -126,21 +122,22 @@ hrax = plt.subplot2grid(grid, (3, 2), colspan=2)
 
 fls, hrs, frs, hls, xs, ys = [], [], [], [], [], []
 excluded = 0
-for i, row in data.iterrows():
+for trn, row in data.iterrows():
     x, y = row.cg[:, 0]-row.cg[0, 0], row.cg[:, 1]-row.cg[0, 1]
     fr, hl, fl, hr = row.fr, row.hl, row.fl, row.hr
 
     # Append to lists if at start of trial each sensor has at least 1g of force applied
     check = True
-    for sens, lst in zip([fr, hl, fl, hr], [frs, hls, fls, hrs]):
-         if sens[0] < 3 and check:
-             excluded += 1
-             check = False
-    if not check: continue
+    # for sens, lst in zip([fr, hl, fl, hr], [frs, hls, fls, hrs]):
+    #      if sens[0] < 1 and check:
+    #          excluded += 1
+    #          check = False
+    # if not check: continue
     
     for i, (sens, lst) in enumerate(zip([fr, hl, fl, hr], [frs, hls, fls, hrs])):
         if np.abs(len(sens) - np.mean([len(x) for x in lst])) != 0 and lst:
-            raise ValueError([i, len(sens), [len(x) for x in lst]])
+            raise ValueError("Something went wrong, probably not all recordings have the same number of frames {}"\
+                            .format([i, len(sens), [len(x) for x in lst]]))
         lst.append(sens)
 
     xs.append(x)
@@ -164,9 +161,9 @@ else:
 
     # cool colors yo
     dtime = np.zeros_like(fr_median)
-    t0, t1 = np.where(fr_median < 1)[0][0], np.where(hl_median < 1)[0][0]
-    dtime[t0:t1] = 1
-    dtime[t1:] = 2
+    # t0, t1 = np.where(fr_median < 1)[0][0], np.where(hl_median < 1)[0][0]
+    # dtime[t0:t1] = 1
+    # dtime[t1:] = 2
 
     cgax.scatter(x_median, y_median, c=time, alpha=1, zorder=10, cmap="Reds")
     cgtax.scatter(x_median, y_median, c=dtime, alpha=1, cmap="tab20c", zorder=10)
@@ -175,7 +172,7 @@ else:
     flax.plot(time, fl_median, color=red, lw=4)
     hrax.plot(time, hr_median, color=red, lw=4)
 
-print("Excluded {} of {} trials".format(excluded, i+1))
+print("Excluded {} of {} trials".format(excluded, trn+1))
 
 cgax.set(title="center of gravity", xlabel="delta x (g)", ylabel="delta y (g)", xlim=[-15, 15], ylim=[-5, 20])
 cgtax.set(title="center of gravity", xlabel="delta x (g)", ylabel="delta y (g)", xlim=[-15, 15], ylim=[-5, 20])
@@ -191,7 +188,7 @@ for fr, hl in zip(frs, hls):
 
 #%%
 # Get just the CG for the frames of interest
-# cgs = [r.cg[r.start:r.end, :]-r.cg[r.start, :] for i,r in data.iterrows()]
+cgs = [r.cg[r.start:r.end, :]-r.cg[r.start, :] for i,r in data.iterrows()]
 
 # ? Compute distances matrixes
 dist_matrix = np.zeros((len(diffs), len(diffs)))
