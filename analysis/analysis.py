@@ -59,19 +59,33 @@ class Analyzer(Config):
             fps.append(r)
 
         # Check if all the frame numbers are correct!
-        s1 = """
-Frames recorded: {}
-Frames in csv:   {}
-Frames in vids:  {}, {}
-Fps vids:        {}, {}
-    
-            """.format(self.frame_count, csv_frames, nframes[0], nframes[1], fps[0], fps[1]) 
+        if self.camera_config['n_cameras'] == 2:
+            s1 = """
+    Frames recorded: {}
+    Frames in csv:   {}
+    Frames in vids:  {}, {}
+    Fps vids:        {}, {}
+        
+                """.format(self.frame_count, csv_frames, nframes[0], nframes[1], fps[0], fps[1]) 
 
-        s2 = """
-Acquisition framerate: {}
-Videos framerates:      {}, {}
-            """.format(self.acquisition_framerate, fps[0], fps[1])
+            s2 = """
+    Acquisition framerate: {}
+    Videos framerates:      {}, {}
+                """.format(self.acquisition_framerate, fps[0], fps[1])
 
+        else:
+            s1 = """
+    Frames recorded: {}
+    Frames in csv:   {}
+    Frames in vids:  {}
+    Fps vids:        {}
+        
+                """.format(self.frame_count, csv_frames, nframes[0],fps[0],) 
+
+            s2 = """
+    Acquisition framerate: {}
+    Videos framerates:      {}
+                """.format(self.acquisition_framerate, fps[0], )
 
 
         if self.frame_count == csv_frames == nframes[0] == nframes[1]:

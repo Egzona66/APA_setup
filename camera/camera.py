@@ -32,13 +32,16 @@ class Camera():
         else:
             self.cameras = pylon.InstantCameraArray(self.camera_config["n_cameras"])  
 
-
     def get_camera_writers(self):
         # Open FFMPEG camera writers if we are saving to video
         if self.save_to_video: 
             for i, file_name in enumerate(self.video_files_names):
+                w, h = self.camera_config["acquisition"]['frame_width'], self.camera_config["acquisition"]['frame_height']
+                indict = self.camera_config['inputdict'].copy()
+                indict['-s'] = '{}x{}'.format(w,h)
+                self.cam_writers[i] = skvideo.io.FFmpegWriter(file_name, outputdict=self.camera_config["outputdict"], inputdict=indict)
+
                 print("Writing to: {}".format(file_name))
-                self.cam_writers[i] = skvideo.io.FFmpegWriter(file_name, outputdict=self.camera_config["outputdict"])
         else:
             self.cam_writers = {str(i):None for i in np.arange(self.camera_config["n_cameras"])}
 
@@ -90,11 +93,10 @@ class Camera():
         start = now
 
         # Given that we did 100 frames in elapsedtime, what was the framerate
-        time_per_frame = (elapsed / 100) * 1000
+        time_per_frame = (elapsed / 500) * 1000
         fps = round(1000  / time_per_frame, 2) 
         
-        print("Tot frames: {}, current fps: {}, desired fps {}.".format(
-                    self.frame_count, fps, self.acquisition_framerate))
+        print("     tot frames: {}, current fps: {}".format(self.frame_count, fps))
         return start
 
     def grab_frames(self):
@@ -128,7 +130,7 @@ class Camera():
         # self.grab.GrabSucceeded is false when a camera doesnt get a frame -> exit the loop
         while True:
             try:
-                if self.frame_count % 100 == 0:  # Print the FPS in the last 100 frames
+                if self.frame_count % 500 == 0:  # Print the FPS in the last 100 frames
                     if self.frame_count == 0: start = time.time()
                     else: start = self.print_current_fps(start)
 
@@ -138,6 +140,12 @@ class Camera():
                 # Read the state of the arduino pins and save to file
                 sensor_states = self.read_arduino_write_to_file(grab.TimeStamp)
 
+                # Read the state of the door status pins
+                ds = self.read_door_status()
+
+                # Threshold sensor data and control door of the arena
+                self.live_sensors_control(sensor_states)
+
                 # If live plotting, add the data and then update plots
                 if self.live_plotting:
                     self.append_sensors_data(sensor_states)
@@ -145,12 +153,14 @@ class Camera():
                         self.update_sensors_plot()
                     except: raise ValueError("Could not append live sensor data during live plotting")
 
-                # Update frame count and terminate
+                # Update frame count
                 self.frame_count += 1
 
                 # Stop if reached max frames
                 if max_frames is not None:
-                        if self.frame_count >= max_frames: break
+                        if self.frame_count >= max_frames: 
+                            print("Reached the end of the experiment.")
+                            break
 
                 # stop if enough time has elapsed
                 if self.experiment_duration is not None:

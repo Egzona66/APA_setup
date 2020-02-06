@@ -22,9 +22,12 @@ def check_file_exists(filepath):
 
 
 def create_csv_file(filepath, fieldnames):
-    with open(filepath, "a", newline='') as f:
-        logger = csv.DictWriter(f, fieldnames=fieldnames)
-        logger.writeheader()
+    try:
+        with open(filepath, "a", newline='') as f:
+            logger = csv.DictWriter(f, fieldnames=fieldnames)
+            logger.writeheader()
+    except Exception as e:
+        raise ValueError("Could not create CSV file, probably because it's open in excel. \n\n{}",format(e))
 
 def append_csv_file(csv_file, row, fieldnames):
     with open(csv_file, "a", newline='') as f:

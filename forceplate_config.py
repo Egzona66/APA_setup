@@ -6,9 +6,14 @@ class Config:
     """
         ############## EXPERIMENT CONFIG  ####################
     """
+
+    # ! ! ! ! ! !
+    # ! fix this (arduino config) when the sensor is fixed:
+    #     n_sensors = 3 # ! fix this because a sensor is brocken
+
     # ! Change these for every recording
-    experiment_folder = "D:\\Egzona\\2020\\21012020(training)"   # ? This should be changed for every experiment to avoid overwriting 
-    experiment_name = "21012020_M_1L"  # should be something like YYMMDD_MOUSEID, all files for an experiment will start with this name
+    experiment_folder = "E:\\Egzona"   # ? This should be changed for everyexperiment to avoid overwriting 
+    experiment_name = "fedetest"  # should be something like YYMMDD_MOUSEID, all files for an experiment will start with this name
     experiment_duration = 5*60  # acquisition duration in seconds, alternatively set as None
 
     # * Live video frames display and sensors data plotting
@@ -20,11 +25,20 @@ class Config:
     acquisition_framerate = 600  # fps of camera triggering -> NEED TO SPECIFY SLEEP TIME IN ARDUINO for frame triggering
 
 
-    overwrite_files = False # ! ATTENTION: this is useful for debug but could lead to overwriting experimental data
-    # So this number is just indicative but the true acquisition rate depends on the trigger arduino
-
+    overwrite_files = True # ! ATTENTION: this is useful for debug but could lead to overwriting experimental data
     save_to_video = True  # ! decide if you want to save the videos or not
 
+    """
+        ############## LIVE SENSOR CONTROLS  ####################
+    """
+    # These commands control how to intepret the live read out to the sensors and act accordingly
+
+    # Thresholds [When all th sensors have a readout > th, do something (e.g. open door)]
+    live_sensors_ths = {"fr":.06, 
+                        "fl":.06,
+                        "hr":.06,
+                        "hl":.06}
+    time_on_sensors = 500 # mouse has to be on all sensors this number of ms before the door opens
 
     """
         ############## POST-HOC ANALYSIS  ####################
@@ -53,6 +67,8 @@ class Config:
                     "-framerate": "10", #   output video framerate 
                     # TODO this doesnt work FPS
                 },
+
+
     }
 
 
@@ -72,17 +88,17 @@ class Config:
 
     camera_config = {
         "video_format": ".avi",
-        "n_cameras": 2,
+        "n_cameras": 1,  # changed on 05/11/2019 to run only one camera
         "timeout": 100,   # frame acquisition timeout
 
         # ? Trigger mode and acquisition options -> needed for constant framerate
-        "trigger_mode": True,  # hardware triggering
+        "trigger_mode": False,  # hardware triggering
         "acquisition": {    
             "exposure": "1000",
-            "frame_width": "480",  # must be a multiple of 32
-            "frame_height": "320", # must be a multiple of 32
+            "frame_width": "192",  # must be a multiple of 32
+            "frame_height": "160", # must be a multiple of 32
             "gain": "12",
-            "frame_offset_y": "544",
+            "frame_offset_y": "727",
             "frame_offset_x": "704",
         },
 
@@ -90,17 +106,28 @@ class Config:
         # all commands and options  https://gist.github.com/tayvano/6e2d456a9897f55025e25035478a3a50
         # pixel formats https://ffmpeg.org/pipermail/ffmpeg-devel/2007-May/035617.html
 
-        "outputdict":{ # for ffmpeg
-            "-vcodec": "mpeg4",   #   low fps high res
-            '-crf': '0',
-            '-preset': 'slow',  # TODO check this
-            '-pix_fmt': 'gray',  # yuvj444p
-            "-cpu-used": "1",  # 0-8. defailt 1, higher leads to higher speed and lower quality
-            # "-r": "100", #   output video framerate 
-            "-flags":"gray",
-            # "-ab":"0",
-            # "-force_fps": "100"
+        # "outputdict":{ # for ffmpeg
+        #     "-vcodec": "mpeg4",   #   low fps high res
+        #     '-crf': '0',
+        #     '-preset': 'slow',  # TODO check this
+        #     '-pix_fmt': 'gray',  # yuvj444p
+        #     "-cpu-used": "1",  # 0-8. defailt 1, higher leads to higher speed and lower quality
+        #     # "-r": "100", #   output video framerate 
+        #     "-flags":"gray",
+        #     # "-ab":"0",
+        #     # "-force_fps": "100"
+        # },
+        "outputdict":{
+            "-c:v": 'libx264',   #   low fps high res
+            "-crf": '17',
+            "-preset": 'ultrafast',
+            "-pix_fmt": 'yuv444p',
+            "-r": str(acquisition_framerate),
         },
+
+        "inputdict":{
+            "-r": str(acquisition_framerate),
+        }
     }
 
     """
@@ -116,9 +143,17 @@ class Config:
             "hr": 6, 
             "hl": 4,
         },
-        "arduino_csv_headers": ["frame_number", "elapsed", "camera_timestamp", "fr", "fl", "hr", "hl"],
+        "door_open_pin": 10,
+        "tone_pin": 11,
+        "door_status_pin": 8, # analog open
+        "arduino_csv_headers": ["frame_number", "elapsed", "camera_timestamp", \
+                            "fr", "fl", "hr", "hl",\
+                            "tone_playing", "door_opening"],
         "sensors": [ "fr", "fl", "hr", "hl"],
     }
+
+    sensors_names =  [ "fr", "fl", "hr", "hl"]
+    n_sensors = 3 # ! fix this because a sensor is brocken
 
     def __init__(self): 
         return # don't need to do anything but we need this func
