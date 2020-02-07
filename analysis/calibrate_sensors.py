@@ -9,17 +9,14 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from scipy.signal import resample
 
-from utils.video_utils import Editor as VideoUtils
 from forceplate_config import Config
-from utils.maths.filtering import line_smoother
-
-
-from utils.file_io_utils import *
 from utils.analysis_utils import *
-from utils.video_utils import Editor as VideoUtils
-from utils.matplotlib_config import *
-from utils.plotting_utils import *
-from utils.constants import *
+
+from fcutils.maths.filter import line_smoother
+from fcutils.video.video_editing import Editor as VideoUtils
+from fcutils.file_io.utils import *
+from fcutils.plotting.utils import *
+from fcutils.plotting.colors import red, blue, green, pink, magenta, white, gray
 
 class Calibration(Config):
     def __init__(self):

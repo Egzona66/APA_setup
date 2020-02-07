@@ -3,12 +3,9 @@ sys.path.append("./")
 
 from pypylon import pylon
 import skvideo.io
-import os
 import cv2
-import numpy as np
 import time
 
-from utils.file_io_utils import *
 
 
 class Camera():
@@ -184,12 +181,3 @@ class Camera():
         if self.save_to_video: 
             for writer in self.cam_writers.values():
                 writer.close()
-
-    # def close
-
-
-if __name__ == "__main__":
-    cam = Camera()
-
-
-

@@ -6,13 +6,11 @@ from pyfirmata2 import util, INPUT, OUTPUT
 import sys
 import time
 
-from utils.file_io_utils import *
+from fcutils.file_io.io import append_csv_file
 
 
 class SerialComm:
 	# variables to control the commands to the door control board
-	# close_command_on = False  # ! not used for now as we are closing manually
-	# close_initiated = None
 	open_command_on = False # keeps track of if we are sending an open command
 	open_initiated = None # keeps track of the time at which the open command started
 	command_duration = 2  # (s). Once a command has been going for longer than this, stop

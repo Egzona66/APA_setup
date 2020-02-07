@@ -6,7 +6,6 @@ from utils.video_utils import Editor as VideoUtils
 
 # ? To manually inspect a video frame by frame:
 # 1) Specify the path to the video you want to analyse
-
 # 2) Run this script
 
 class Inspector(Config, VideoUtils):

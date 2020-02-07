@@ -11,10 +11,9 @@ from serial_com.comms import SerialComm
 from utils.file_io_utils import *
 
 from analysis.analysis import Analyzer
-from analysis.live_plotting import Plotter as LivePlotter
 from forceplate_config import Config
 
-class Main(Camera, SerialComm, Analyzer, LivePlotter, Config):
+class Main(Camera, SerialComm, Analyzer, Config):
     _tone_command = 0 # used to write to csv when tone command starts and ends
     _door_command = 0 # used to write to csv when door command starts and ends
 
@@ -22,7 +21,6 @@ class Main(Camera, SerialComm, Analyzer, LivePlotter, Config):
         Config.__init__(self)  # load the config paramaters
         Camera.__init__(self)
         SerialComm.__init__(self)
-        LivePlotter.__init__(self)
 
 
     def setup_experiment_files(self):
@@ -64,21 +62,6 @@ class Main(Camera, SerialComm, Analyzer, LivePlotter, Config):
         # Close pylon windows and ffmpeg writers
         self.close_pylon_windows()
         self.close_ffmpeg_writers()
-
-        # # Plot stuff
-        # Analyzer.__init__(self)
-        # self.check_number_frames() # check that the number of frames is correct
-
-        # self.plot_frame_delays()
-        # try:
-        #     self.plot_sensors_traces()
-        # except: 
-        #     pass
-        
-
-        # self.save_figs()
-        # self.show() # this block python until you close the plot windows
-        
 
 
     def start_experiment(self):
