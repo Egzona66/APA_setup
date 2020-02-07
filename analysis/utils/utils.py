@@ -41,5 +41,7 @@ def compute_center_of_gravity(sensors_data):
             (sensors_data["hr"]+sensors_data["hl"])
     x = (sensors_data["fr"]+sensors_data["hr"]) - 
             (sensors_data["fl"]+sensors_data["hl"])
-    return np.hstack([x,y]).T
+
+    centered_x, centered_y = x-x[0], y-y[0]
+    return np.hstack([x,y]).T, np.hstack([centered_x,centered_y]).T
 
