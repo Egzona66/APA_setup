@@ -14,17 +14,15 @@ from tqdm import tqdm
 import matplotlib.patches as patches
 
 
-from utils.video_utils import Editor as VideoUtils
+from fcutils.video.video_editing import Editor as VideoUtils
 from forceplate_config import Config
-from utils.maths.filtering import line_smoother
+from fcutils.maths.filtering import line_smoother
 
 
-from utils.file_io_utils import *
+from fcutils.file_io.utils import *
 from utils.analysis_utils import *
-from utils.video_utils import Editor as VideoUtils
-from utils.matplotlib_config import *
-from utils.plotting_utils import *
-from utils.constants import *
+from fcutils.plotting.utils import *
+from fcutils.plotting.colors import red, blue, green, pink, magenta, white, gray
 
 class VideoAnalysis(Config, VideoUtils):
     def __init__(self):
