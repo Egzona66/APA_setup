@@ -3,15 +3,14 @@ sys.path.append("./")
 
 import numpy as np
 
-from calibrate_sensors import Calibration
+from .calibrate_sensors import Calibration
 
 def baseline_sensor_data(values):
     return values - np.nanmedian(values)
 
-
 # -------------------------------- Corrections ------------------------------- #
 
-def calibrate_sensors_data(sensors_data, sensors):
+def calibrate_sensors_data(sensors_data, sensors, calibration_data=None):
     """
         Calibrates the sensors to convert voltages to grams
 
@@ -19,7 +18,7 @@ def calibrate_sensors_data(sensors_data, sensors):
         :param sensors: list of strings with the name of allowed sensors
     """
 
-    calibration = Calibration()
+    calibration = Calibration(calibration_data=calibration_data)
     return {ch:calibration.correct_raw(baseline_sensor_data(volts), ch) 
                                 for ch, volts in sensors_data.items() if ch in sensors}
 
@@ -37,9 +36,9 @@ def correct_paw_used(sensors_data, paw_used):
 # ------------------------------- Computations ------------------------------- #
 
 def compute_center_of_gravity(sensors_data):
-    y = (sensors_data["fr"]+sensors_data["fl"]) - 
+    y = (sensors_data["fr"]+sensors_data["fl"]) - \
             (sensors_data["hr"]+sensors_data["hl"])
-    x = (sensors_data["fr"]+sensors_data["hr"]) - 
+    x = (sensors_data["fr"]+sensors_data["hr"]) - \
             (sensors_data["fl"]+sensors_data["hl"])
 
     centered_x, centered_y = x-x[0], y-y[0]

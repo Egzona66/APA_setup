@@ -9,22 +9,52 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from scipy.signal import resample
 
-from forceplate_config import Config
 from utils.analysis_utils import *
 
-from fcutils.maths.filter import line_smoother
+from fcutils.maths.filtering import line_smoother
 from fcutils.video.video_editing import Editor as VideoUtils
 from fcutils.file_io.utils import *
+from fcutils.file_io.io import load_csv_file
 from fcutils.plotting.utils import *
-from fcutils.plotting.colors import red, blue, green, pink, magenta, white, gray
+from fcutils.plotting.colors import red, blue, green, pink, magenta, white
 
-class Calibration(Config):
-    def __init__(self):
-        Config.__init__(self)
-        self.calibrate_sensors(plot=True)
+
+analysis_config = {
+    "plot_colors": { "fr":magenta, 
+                    "fl":blue}, 
+                    #"hr":red, 
+                    #"hl":green},
+
+    # * for composite video
+    # ? run video_analysis.py
+    "start_clip_time_s": None, # ? Create clips start at this point, in SECONDS
+    "start_clip_time_frame": 9799, # ? Create clips start at this point, in FRAMES
+    "clip_n_frames": 180 , # duration of the clip in frames
+    "clip_name":"test", 
+
+    "outputdict":{ # for ffmpeg
+                # '-vcodec': 'mpeg4',  #  high fps low res
+                "-vcodec": "libx264",   #   low fps high res
+                '-crf': '0',
+                '-preset': 'slow',  # TODO check this
+                '-pix_fmt': 'yuvj444p',
+                "-framerate": "10", #   output video framerate 
+                # TODO this doesnt work FPS
+            },
+    }
+
+
+class Calibration():
+    def __init__(self, calibration_data=None, plot=False):
+        self.calibration_data=calibration_data
+        self.calibrate_sensors(plot=plot)
+
 
     def calibrate_sensors(self, plot=False):
-        calibration_data = load_csv_file("D:\\Egzona\\forceplatesensors_calibration2.csv")
+        if self.calibration_data is None:
+            calibration_data = load_csv_file("D:\\Egzona\\forceplatesensors_calibration2.csv")
+        else:
+            calibration_data = self.calibration_data
 
         readouts = dict(fr=[], fl=[], hr=[], hl=[])
         weights = []

@@ -41,38 +41,6 @@ class Config:
     time_on_sensors = 500 # mouse has to be on all sensors this number of ms before the door opens
 
     """
-        ############## POST-HOC ANALYSIS  ####################
-    """
-    analysis_config = {
-        "data_folder": "D:\\Egzona\\2020\\29012020(training)", # where the data to analyse are stored
-        "experiment_name": "M_1R",
-        "plot_colors": { "fr":magenta, 
-                        "fl":blue}, 
-                        #"hr":red, 
-                        #"hl":green},
-
-        # * for composite video
-        # ? run video_analysis.py
-        "start_clip_time_s": None, # ? Create clips start at this point, in SECONDS
-        "start_clip_time_frame": 9799, # ? Create clips start at this point, in FRAMES
-        "clip_n_frames": 180 , # duration of the clip in frames
-        "clip_name":"test", 
-
-        "outputdict":{ # for ffmpeg
-                    # '-vcodec': 'mpeg4',  #  high fps low res
-                    "-vcodec": "libx264",   #   low fps high res
-                    '-crf': '0',
-                    '-preset': 'slow',  # TODO check this
-                    '-pix_fmt': 'yuvj444p',
-                    "-framerate": "10", #   output video framerate 
-                    # TODO this doesnt work FPS
-                },
-
-
-    }
-
-
-    """
         ############## LIVE PLOTTING  ####################
     """
     live_plotting_config = {

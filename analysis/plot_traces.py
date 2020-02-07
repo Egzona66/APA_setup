@@ -6,8 +6,9 @@ import matplotlib.pyplot as plt
 import os
 import seaborn as sns
 
-# from fcutils.file_io.utils import check_file_exists
+from fcutils.file_io.utils import check_file_exists
 from fcutils.plotting.colors import salmon
+from fcutils.plotting.utils import set_figure_subplots_aspect
 
 # ---------------------------------------------------------------------------- #
 #                                     SETUP                                    #
@@ -30,24 +31,24 @@ plot_centered_CoG = False # if true the centered CoG is used (all trials starts 
 
 # ------------------------------- Create figure ------------------------------ #
 f = plt.figure(figsize=(20, 14))
-grid = (4, 6)
 
+grid = (5, 7)
 axes = {}
-axes['CoG'] = plt.subplot2grid(grid, (1, 0), rowspan=3, colspan=3)
-axes['fr'] = plt.subplot2grid(grid, (0, 3), colspan=3)
-axes['fl'] = plt.subplot2grid(grid, (1, 3), colspan=3)
-axes['hr'] = plt.subplot2grid(grid, (2, 3),  colspan=3)
-axes['hl'] = plt.subplot2grid(grid, (3, 3),  colspan=3)
+axes['CoG'] = plt.subplot2grid(grid, (1, 0), rowspan=2, colspan=3)
+axes['fr'] = plt.subplot2grid(grid, (0, 4), colspan=3)
+axes['fl'] = plt.subplot2grid(grid, (1, 4), colspan=3, sharex=axes['fr'])
+axes['hr'] = plt.subplot2grid(grid, (2, 4),  colspan=3, sharex=axes['fr'])
+axes['hl'] = plt.subplot2grid(grid, (3, 4),  colspan=3, sharex=axes['fr'])
 
-# TODO make sensors subplots share X and Y axes
-
-sns.despine() # TODO improve
-# TODO use fcutils to set aspect ratios
-
-
+# Style axes
+for ch in ['fr', 'fl', 'hr']:
+    axes[ch].set(xticks=[])
+    
+sns.despine(offset=10)
 for title, ax in axes.items():
-    ax.set(title=title)
+    ax.set(title=title.upper())
 
+# %%
 # -------------------------- Plot individual trials -------------------------- #
 for trn, row in data.iterrows():
     for ch in sensors:
@@ -92,3 +93,5 @@ for ch in sensors:
     
 # TODO style x ticks to go from frames to time
 # Style figures and axes
+
+# %%

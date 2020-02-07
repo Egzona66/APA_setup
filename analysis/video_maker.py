@@ -24,10 +24,38 @@ from utils.analysis_utils import *
 from fcutils.plotting.utils import *
 from fcutils.plotting.colors import red, blue, green, pink, magenta, white, gray
 
-class VideoAnalysis(Config, VideoUtils):
+analysis_config = {
+    "data_folder": "D:\\Egzona\\2020\\29012020(training)", # where the data to analyse are stored
+    "experiment_name": "M_1R",
+    "plot_colors": { "fr":magenta, 
+                    "fl":blue}, 
+                    #"hr":red, 
+                    #"hl":green},
+
+    # * for composite video
+    # ? run video_analysis.py
+    "start_clip_time_s": None, # ? Create clips start at this point, in SECONDS
+    "start_clip_time_frame": 9799, # ? Create clips start at this point, in FRAMES
+    "clip_n_frames": 180 , # duration of the clip in frames
+    "clip_name":"test", 
+
+    "outputdict":{ # for ffmpeg
+                # '-vcodec': 'mpeg4',  #  high fps low res
+                "-vcodec": "libx264",   #   low fps high res
+                '-crf': '0',
+                '-preset': 'slow',  # TODO check this
+                '-pix_fmt': 'yuvj444p',
+                "-framerate": "10", #   output video framerate 
+                # TODO this doesnt work FPS
+            },
+
+
+}
+
+
+class VideoAnalysis(VideoUtils):
     def __init__(self):
         VideoUtils.__init__(self)
-        Config.__init__(self)
 
     def animated_plot(self, fps,  n_timepoints = 500):
         # TODO: improve: http://zulko.github.io/blog/2014/11/29/data-animations-with-python-and-moviepy/
@@ -51,13 +79,13 @@ class VideoAnalysis(Config, VideoUtils):
             trimmed = self.data.iloc[x_0:i]
 
             for ch in self.arduino_config["sensors"]:
-                p = ax.plot(trimmed[ch].values, color=self.analysis_config['plot_colors'][ch])
+                p = ax.plot(trimmed[ch].values, color=analysis_config['plot_colors'][ch])
 
         # Start animation
         ani = animation.FuncAnimation(f, animate, frames=1000, repeat=True)
 
 
-        ani.save(os.path.join(self.analysis_config["data_folder"], 'sensors_animatino.mp4'), writer=writer)
+        ani.save(os.path.join(analysis_config["data_folder"], 'sensors_animatino.mp4'), writer=writer)
 
 
     def composite_video(self, start_time_in_secs=True, sensors_plot_height=200, plot_datapoints= 100):
@@ -67,7 +95,7 @@ class VideoAnalysis(Config, VideoUtils):
         # ! Which folder is being processed is specified in forceplate_config under analysis_config
 
         # Load data and open videos
-        csv_file, video_files = parse_folder_files(self.analysis_config["data_folder"], self.analysis_config["experiment_name"])
+        csv_file, video_files = parse_folder_files(analysis_config["data_folder"], analysis_config["experiment_name"])
         self.data = load_csv_file(csv_file)
         normalized = normalize_channel_data(self.data, self.arduino_config["sensors"])
         smoothed = {k:line_smoother(v, window_size=9, order=5) for k,v in normalized.items()}
@@ -83,30 +111,30 @@ class VideoAnalysis(Config, VideoUtils):
         fps = video_params["cam0"][3]
 
         # Get ffmpeg video writer
-        ffmpeg_dict = self.analysis_config["outputdict"]
-        outputfile = os.path.join(self.analysis_config["data_folder"], "{}_{}.avi".format(self.analysis_config["experiment_name"], self.analysis_config["clip_name"]))
+        ffmpeg_dict = analysis_config["outputdict"]
+        outputfile = os.path.join(analysis_config["data_folder"], "{}_{}.avi".format(analysis_config["experiment_name"], analysis_config["clip_name"]))
         if os.path.isfile(outputfile): raise  FileExistsError("Could not overwrite file!!")
         print("\n\n Saving video to: ", outputfile)
         ffmpegwriter = skvideo.io.FFmpegWriter(outputfile, outputdict=ffmpeg_dict)
 
         # Get clip start time
-        if self.analysis_config["start_clip_time_s"] is not None:
-            start_s = self.analysis_config["start_clip_time_s"]
+        if analysis_config["start_clip_time_s"] is not None:
+            start_s = analysis_config["start_clip_time_s"]
             start_frame = np.floor(start_s * fps)
         else:
-            start_frame = self.analysis_config["start_clip_time_frame"]
+            start_frame = analysis_config["start_clip_time_frame"]
 
         # Move caps to the corresponding frame
         for cap in caps.values(): self.move_cv2cap_to_frame(cap, start_frame)
 
         # get dest folder
-        #frames_folder = os.path.join(self.analysis_config["data_folder"], "frames")
+        #frames_folder = os.path.join(analysis_config["data_folder"], "frames")
         #check_create_folder(frames_folder)
 
         f = plt.figure()
 
         # Start looping over frames
-        for framen in tqdm(np.arange(start_frame, start_frame+self.analysis_config["clip_n_frames"])):
+        for framen in tqdm(np.arange(start_frame, start_frame+analysis_config["clip_n_frames"])):
             framen = int(framen)
             # Create a figure and save it then close it
             ax0 = plt.subplot2grid((2, 3), (0, 0), colspan=1)
@@ -132,11 +160,11 @@ class VideoAnalysis(Config, VideoUtils):
             data_range = [int(framen), int(framen+plot_datapoints)]
             channel_rectangles_coords = {"fr":(0, 0), "fl":(-1, 0)}
             allc = {}
-            for ch, color in self.analysis_config["plot_colors"].items():
+            for ch, color in analysis_config["plot_colors"].items():
                 # Plot sensors traces as KDE
                 channel_data = smoothed[ch][data_range[0]-50:data_range[1]-50]
                 x = np.arange(0, len(channel_data)) 
-                # kde = fit_kde(channel_data, bw=self.analysis_config["smooth_factor"])
+                # kde = fit_kde(channel_data, bw=analysis_config["smooth_factor"])
                 #ax2.fill_between(x, 0, channel_data, alpha=.15, color=color)
                 ax2.plot(x, channel_data, alpha=1, color=color, label=ch)
 
