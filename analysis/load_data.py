@@ -21,12 +21,12 @@ from utils.utils import calibrate_sensors_data, compute_center_of_gravity
 
 # --------------------------------- Variables -------------------------------- #
 fps = 600
-n_frames = 200 # Number of frames to take after the "start" of the trial
+n_frames = 400 # Number of frames to take after the "start" of the trial
 
-calibrate_sensors = True
+calibrate_sensors = False
 correct_for_paw = False # If true trials with both paws are used, after correcting for paw
             # Otherwise select trials with which paw to use
-use_paw = 'L'
+use_paw = 'R'
 
 
 # ----------------------------------- Files ---------------------------------- #
@@ -115,3 +115,7 @@ else:
 
 print("Saving data to: {}".format(savepath))
 data.to_hdf(savepath, key='hdf')
+
+
+
+# %%
