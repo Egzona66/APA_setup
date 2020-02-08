@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from scipy.signal import resample
 
-from utils.analysis_utils import *
 
 from fcutils.maths.filtering import line_smoother
 from fcutils.video.video_editing import Editor as VideoUtils
@@ -46,68 +45,57 @@ analysis_config = {
 
 class Calibration():
     def __init__(self, calibration_data=None, plot=False):
+        """
+            Fits some calibration data with a line and uses the fit 
+            to correct voltage data.
+
+            :param calibration_data: pd.DataFrame with readout from calibration .csv. 
+                    Should have voltage at a set of weights for each sensor in the forceplate.
+            :param plot: bool, if true the results of the fit are displayed.
+        """
         self.calibration_data=calibration_data
-        self.calibrate_sensors(plot=plot)
-
-
-    def calibrate_sensors(self, plot=False):
-        if self.calibration_data is None:
-            calibration_data = load_csv_file("D:\\Egzona\\forceplatesensors_calibration2.csv")
-        else:
-            calibration_data = self.calibration_data
-
-        readouts = dict(fr=[], fl=[], hr=[], hl=[])
-        weights = []
-        for i, row in calibration_data.iterrows():
-            # Get the average of the voltage readings
-            measurements = [row[k] for k in row.keys() if "voltage" in k and row[k]]
-            voltage = np.nanmean(measurements)
-            readouts[row.Sensor].append(row.voltage/5)
-
-            if row.Sensor == "fr":
-                weights.append(row.weight)
+        self.fitted, weights, voltages = self.fit_calibration()
 
         if plot:
-            f, ax = plt.subplots() 
-            fits = {}
-            for ch, voltages in readouts.items():
-                fit = np.polyfit(voltages, weights,  6)
-                fitplot = np.poly1d(fit)
-                fits[ch] = fitplot
+            self.plot_fitted(weights, voltages)
 
-                x = np.linspace(0, .4, 100)
-                ax.scatter(voltages, weights, color=self.analysis_config["plot_colors"][ch], label=ch, s=100)
-                ax.plot(x, fitplot(x), color=self.analysis_config["plot_colors"][ch], label=ch)
-            ax.set(title="calibration curve", xlabel="voltage", ylabel="weight (g)")
-            ax.legend()
-        else:
-            fits = {}
-            for ch, voltages in readouts.items():
-                fit = np.polyfit(voltages, weights,  6)
-                fitplot = np.poly1d(fit)
-                fits[ch] = fitplot
+    def parse_calibration_data(self):
+        """
+            Parses data from a spreadsheet with calibration data 
+            to get the voltage at each weight for each channel.
+        """
+        sensors = set(self.calibration_data.Sensor.values)
+        weights = list(set(self.calibration_data.weight.values))
 
-        self.calibration_funcs = fits
-        return fits
+        voltages = {ch:self.calibration_data.loc[self.calibration_data.Sensor == ch].voltage.values/5 \
+                        for ch in sensors} 
+        return sensors, weights, voltages
 
-    def correct_raw(self, voltages, ch, calibration_funcs=None):
-        if calibration_funcs is not None: raise NotImplementedError
-        else:
-            return self.calibration_funcs[ch](voltages)
+    def fit_calibration(self):
+        sensors, weights, voltages = self.parse_calibration_data()
+        fitted = {}
+        for ch in sensors:
+            fitted[ch] = np.poly1d(np.polyfit(voltages[ch], weights, 1))
+        return fitted, weights, voltages
 
-    def test(self):
-        self.calibrate_sensors(plot=True)
+    def plot_fitted(self, weights, voltages):    
+        f, ax = plt.subplots() 
+        for ch, voltages in voltages.items():
+            ax.scatter(voltages, weights, label=ch, s=50, alpha=.5)
 
-        x = np.arange(0, 3)
-        xcorr = self.correct_raw(x, "fr")
+            x = np.linspace(0, np.max(voltages), 100)
+            y = self.fitted[ch](x)
+            ax.plot(x, y, alpha=.5, lw=2, ls='--')
+        ax.set(title="calibration curve", xlabel="voltage", ylabel="weight (g)")
+        ax.legend()
 
-        plt.plot(x, xcorr, color=white, lw=4, alpha=.4, label="correct")
-        plt.legend()
-
-
+    def correct_raw(self, voltages, ch):
+        return self.fitted[ch](voltages)
 
 
 
 if __name__ == "__main__":
-    c = Calibration()
+    calibration_file = '/Users/federicoclaudi/Dropbox (UCL - SWC)/Rotation_vte/Egzona/forceplatesensors_calibration2.csv'
+    calibration_data = load_csv_file(calibration_file)
+    c = Calibration(calibration_data=calibration_data, plot=True)
     plt.show()

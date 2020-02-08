@@ -1,4 +1,3 @@
-# %%
 import sys
 sys.path.append("./")
 
@@ -6,15 +5,16 @@ import pandas as pd
 import numpy as np
 import os
 from tqdm import tqdm
+from datetime import datetime
 
 from fcutils.file_io.utils import check_file_exists, check_file_exists, check_create_folder
-from fcutils.file_io.io import load_csv_file
+from fcutils.file_io.io import load_csv_file, save_json
 
 from utils.analysis_utils import parse_folder_files
 from utils.utils import calibrate_sensors_data, compute_center_of_gravity
-%matplotlib inline
 
-# %%
+
+
 # ---------------------------------------------------------------------------- #
 #                                     SETUP                                    #
 # ---------------------------------------------------------------------------- #
@@ -23,7 +23,9 @@ from utils.utils import calibrate_sensors_data, compute_center_of_gravity
 fps = 600
 n_frames = 400 # Number of frames to take after the "start" of the trial
 
-calibrate_sensors = False
+calibrate_sensors = True
+weight_percent = True # If calibrate_sensors is True and this is true traces are
+                            # represent percentage of the animals weight
 correct_for_paw = False # If true trials with both paws are used, after correcting for paw
             # Otherwise select trials with which paw to use
 use_paw = 'R'
@@ -46,6 +48,7 @@ framesfile = os.path.join(main_fld, "clipsframes_FP3.csv")
 
 # Save path
 savepath = os.path.join(main_fld, "data.hdf")
+metadata_savepath = os.path.join(main_fld, "metadata.json")
 
 # ----------------------------------- Misc ----------------------------------- #
 sensors = ["fr", "fl", "hr", "hl"]
@@ -63,9 +66,8 @@ if calibrate_sensors:
     
 
 
-# %%
 # ---------------------------------------------------------------------------- #
-#                                   LOAD DATA                                  #
+#                                 PROCESS DATA                                 #
 # ---------------------------------------------------------------------------- #
 
 # Load data for each video
@@ -87,7 +89,10 @@ for i, trial in tqdm(frames_data.iterrows()):
 
     # Get baselined and calibrated sensors data
     if calibrate_sensors:
-        sensors_data = calibrate_sensors_data(sensors_data, sensors, calibration_data=calibration_data)
+        sensors_data = calibrate_sensors_data(sensors_data, sensors, 
+                                        calibration_data=calibration_data, 
+                                        weight_percent=weight_percent,
+                                        mouse_weight=trial.Weight)
 
     # Check paw used or skip wrong paw trials
     if correct_for_paw:
@@ -118,6 +123,20 @@ else:
 print("Saving data to: {}".format(savepath))
 data.to_hdf(savepath, key='hdf')
 
+# ------------------------------- Save metadata ------------------------------ #
+metadata = dict(
+    date=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+    fps=fps,
+    n_frames=n_frames,
+    calibrate_sensors=calibrate_sensors,
+    weight_percent=weight_percent,
+    correct_for_paw=correct_for_paw,
+    use_paw=use_paw,
+    frames_file=frames_file,
+    sensors=sensors,
+)
+print("Saving metadata to: {}".format(metadata_savepath))
+save_json(metadata_savepath, metadata)
 
 
-# %%
+
