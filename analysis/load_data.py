@@ -60,6 +60,7 @@ frames_data = pd.read_csv(frames_file)
 if calibrate_sensors:
     check_file_exists(calibration_file, raise_error=True)
     calibration_data = load_csv_file(calibration_file)
+    
 
 
 # %%
@@ -81,10 +82,11 @@ for i, trial in tqdm(frames_data.iterrows()):
     # Load and trim sensors data
     start_frame, end_frame = trial.Start, trial.Start + n_frames
     sensors_data = load_csv_file(csv_file)
+    sensors_data = {ch:sensors_data[ch].values for ch in sensors}
     sensors_data = {ch:v[start_frame:end_frame] for ch,v in sensors_data.items()}
 
     # Get baselined and calibrated sensors data
-    if calibrate_sensors_data:
+    if calibrate_sensors:
         sensors_data = calibrate_sensors_data(sensors_data, sensors, calibration_data=calibration_data)
 
     # Check paw used or skip wrong paw trials
@@ -96,7 +98,7 @@ for i, trial in tqdm(frames_data.iterrows()):
     # compute center of gravity
     CoG, centered_CoG = compute_center_of_gravity(sensors_data)
 
-    # Organise all data
+    # Organise data
     data["name"].append(trial.Video)
     for ch, vals in sensors_data.items():
         data[ch].append(vals)

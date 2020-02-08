@@ -4,7 +4,9 @@ sys.path.append('./')
 
 import matplotlib.pyplot as plt
 import os
+import pandas as pd
 import seaborn as sns
+import numpy as np
 
 from fcutils.file_io.utils import check_file_exists
 from fcutils.plotting.colors import salmon
@@ -23,9 +25,9 @@ data = pd.read_hdf(savepath, key='hdf')
 sensors = ['fr', 'fl', 'hr', 'hl']
 
 # --------------------------------- Variables -------------------------------- #
-calibrated_data = True # Set as true if the data are calibrated Volts -> Grams
+calibrated_data = False # Set as true if the data are calibrated Volts -> Grams
 plot_centered_CoG = False # if true the centered CoG is used (all trials starts at 0,0)
-
+fps = 600
 
 # %%
 # ------------------------------- Create figure ------------------------------ #
@@ -35,17 +37,17 @@ grid = (5, 7)
 axes = {}
 axes['CoG'] = plt.subplot2grid(grid, (1, 0), rowspan=2, colspan=3)
 axes['fr'] = plt.subplot2grid(grid, (0, 4), colspan=3)
-axes['fl'] = plt.subplot2grid(grid, (1, 4), colspan=3)
-axes['hr'] = plt.subplot2grid(grid, (2, 4),  colspan=3)
-axes['hl'] = plt.subplot2grid(grid, (3, 4),  colspan=3)
+axes['fl'] = plt.subplot2grid(grid, (1, 4), colspan=3, sharey=axes['fr'])
+axes['hr'] = plt.subplot2grid(grid, (2, 4),  colspan=3, sharey=axes['fr'])
+axes['hl'] = plt.subplot2grid(grid, (3, 4),  colspan=3, sharey=axes['fr'])
 
 # Style axes
 for ch in ['fr', 'fl', 'hr']:
     axes[ch].set(xticks=[])
 
-xticks = [0, 50, 100, 150, 200]
-xlabels = [round((x/fps)*1000, 2) for x in xticks]
-axes['hl'].set(xlabel='milliseconds', xticklabels=xlabels, xticks=xticks)
+xticks = np.arange(0, fps, fps/10)
+xlabels = [round((x/fps), 3) for x in xticks]
+axes['hl'].set(xlabel='seconds', xticklabels=xlabels, xticks=xticks)
 
 sns.despine(offset=10)
 for title, ax in axes.items():
@@ -92,8 +94,7 @@ for ch in sensors:
         ylabel = '$V$'
     axes[ch].set(ylabel=ylabel)
 
-axes['CoG'].set(ylabel=ylabel, xlabel=ylabel,
-        xlim=[-5, 8], ylim=[-2, 3])
+axes['CoG'].set(ylabel=ylabel, xlabel=ylabel)
 
 
 # %%
