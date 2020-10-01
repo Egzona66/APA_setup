@@ -1,6 +1,7 @@
 import sys
 sys.path.append("./")
 
+
 import os
 import numpy as np
 from scipy import signal
@@ -18,7 +19,7 @@ def parse_folder_files(folder, exp_name):
     try:
         return csv_file, video_files
     except:
-        return None, None
+        raise FileNotFoundError(f'Could not fine csv or video files for {exp_name} in folder {folder}')
 
 def normalize_channel_data(data, sensors):
     return  {ch: data[ch].values - np.nanmedian(data[ch].values) for ch in sensors}

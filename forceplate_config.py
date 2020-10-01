@@ -1,4 +1,4 @@
-from utils.constants import *
+from utils import *
 
 
 # Define a config class with all the options for data acquisition and post-hoc analysis

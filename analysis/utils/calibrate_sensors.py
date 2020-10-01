@@ -20,27 +20,27 @@ from fcutils.plotting.colors import red, blue, green, pink, magenta, white
 
 analysis_config = {
     "plot_colors": { "fr":magenta, 
-                    "fl":blue}, 
-                    #"hr":red, 
-                    #"hl":green},
+                     "fl":blue, 
+                     "hr":red, 
+                     "hl":green},}
 
-    # * for composite video
-    # ? run video_analysis.py
-    "start_clip_time_s": None, # ? Create clips start at this point, in SECONDS
-    "start_clip_time_frame": 9799, # ? Create clips start at this point, in FRAMES
-    "clip_n_frames": 180 , # duration of the clip in frames
-    "clip_name":"test", 
+    # # * for composite video
+    # # ? run video_analysis.py
+    # "start_clip_time_s": None, # ? Create clips start at this point, in SECONDS
+    # "start_clip_time_frame": 9799, # ? Create clips start at this point, in FRAMES
+    # "clip_n_frames": 180 , # duration of the clip in frames
+    # "clip_name":"test", 
 
-    "outputdict":{ # for ffmpeg
-                # '-vcodec': 'mpeg4',  #  high fps low res
-                "-vcodec": "libx264",   #   low fps high res
-                '-crf': '0',
-                '-preset': 'slow',  # TODO check this
-                '-pix_fmt': 'yuvj444p',
-                "-framerate": "10", #   output video framerate 
-                # TODO this doesnt work FPS
-            },
-    }
+    # "outputdict":{ # for ffmpeg
+    #             # '-vcodec': 'mpeg4',  #  high fps low res
+    #             "-vcodec": "libx264",   #   low fps high res
+    #             '-crf': '0',
+    #             '-preset': 'slow',  # TODO check this
+    #             '-pix_fmt': 'yuvj444p',
+    #             "-framerate": "10", #   output video framerate 
+    #             # TODO this doesnt work FPS
+    #         },
+    
 
 
 class Calibration():
@@ -67,7 +67,7 @@ class Calibration():
         sensors = set(self.calibration_data.Sensor.values)
         weights = list(set(self.calibration_data.weight.values))
 
-        voltages = {ch:self.calibration_data.loc[self.calibration_data.Sensor == ch].voltage.values/5 \
+        voltages = {ch:self.calibration_data.loc[self.calibration_data.Sensor == ch].voltage.values \
                         for ch in sensors} 
         return sensors, weights, voltages
 
@@ -95,7 +95,7 @@ class Calibration():
 
 
 if __name__ == "__main__":
-    calibration_file = '/Users/federicoclaudi/Dropbox (UCL - SWC)/Rotation_vte/Egzona/forceplatesensors_calibration2.csv'
+    calibration_file = 'D:\\Egzona\\Forceplate\\forceplatesensors_calibration4.csv'
     calibration_data = load_csv_file(calibration_file)
     c = Calibration(calibration_data=calibration_data, plot=True)
     plt.show()

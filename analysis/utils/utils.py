@@ -11,7 +11,9 @@ def baseline_sensor_data(values):
 # -------------------------------- Corrections ------------------------------- #
 
 def calibrate_sensors_data(sensors_data, sensors, calibration_data=None,
-                                weight_percent=False, mouse_weight=None):
+                           weight_percent=False, mouse_weight=None,
+                           direction=None, paw=None, base_voltageFR=None, 
+                           base_voltageFL=None, base_voltageHR=None, base_voltageHL=None): 
     """
         Calibrates the sensors to convert voltages to grams
 
@@ -21,15 +23,25 @@ def calibrate_sensors_data(sensors_data, sensors, calibration_data=None,
         :param weight_percent: if true the weights are expressed in percentage of the mouse weight
         :param mouse_weight: float, weight of the mouse whose data are being processed
     """
-
+    # subtract base voltage
+    if base_voltageFR is not None:
+        sensors_data['fr'] = sensors_data['fr'] - base_voltageFR
+    if base_voltageFL is not None:
+        sensors_data['fl'] = sensors_data['fl'] - base_voltageFL
+    if base_voltageHR is not None:
+        sensors_data['hr'] = sensors_data['hr'] - base_voltageHR
+    if base_voltageHL is not None:
+        sensors_data['hl'] = sensors_data['hl'] - base_voltageHL
+   
+    # calibrate
     calibration = Calibration(calibration_data=calibration_data)
-    calibrated =  {ch:calibration.correct_raw(volts, ch) 
+    calibrated =  {ch:calibration.correct_raw(np.float32(volts), ch) 
                                 for ch, volts in sensors_data.items() if ch in sensors}
 
     if weight_percent:
         calibrated = {ch:(values/mouse_weight)*100 for ch, values in calibrated.items()}
-    
     return calibrated
+     
 
 def correct_paw_used(sensors_data, paw_used):
     if 'l' in paw_used.lower():

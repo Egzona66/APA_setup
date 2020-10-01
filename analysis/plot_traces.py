@@ -17,14 +17,14 @@ from fcutils.plotting.utils import set_figure_subplots_aspect
 #                                     SETUP                                    #
 # ---------------------------------------------------------------------------- #
 plot_trials_CoG = True # if true a line for each CoG is plotted, otherwise just the mean
-plot_centered_CoG = False # if true the centered CoG is used (all trials starts at 0,0)
+plot_centered_CoG = True # if true the centered CoG is used (all trials starts at 0,0)
 
 # --------------------------------- Load data -------------------------------- #
-main_fld = "/Users/federicoclaudi/Dropbox (UCL - SWC)/Rotation_vte/Egzona/2020"
+main_fld = "D:\\Egzona\\Forceplate\\2020"
 data_file = os.path.join(main_fld, "data.hdf")
 metadata_file = os.path.join(main_fld, "metadata.json")
 check_file_exists(data_file, raise_error=True)
-check_file_exists(metadata_file, raise_error=True)
+check_file_exists(metadata_file, raise_error=True) 
 
 data = pd.read_hdf(data_file, key='hdf')
 metadata = load_json(metadata_file)
@@ -101,14 +101,17 @@ for ch in sensors:
     if metadata['calibrate_sensors']:
         if not metadata['weight_percent']:
             ylabel = '$g$'
+            axes[ch].set(ylabel=ylabel, ylim=(0,15))
         else:
             ylabel = '$weight percent.$'
+            axes[ch].set(ylabel=ylabel, ylim=(0,100))
     else:
         ylabel = '$V$'
-    axes[ch].set(ylabel=ylabel)
 
-axes['CoG'].set(ylabel=ylabel, xlabel=ylabel)
+axes['CoG'].set(ylabel=ylabel, ylim=(-50, 50), xlabel=ylabel, xlim=(-50, 50))
 
-
+f.tight_layout()
 
 plt.show()
+
+# %%
