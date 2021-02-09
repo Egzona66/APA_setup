@@ -10,6 +10,7 @@ def parse_folder_files(folder, exp_name):
     video_files = {}
     for f in os.listdir(folder):
         if not exp_name in f: continue
+        
         if "csv" in f:
             csv_file = os.path.join(folder, f)
         elif "cam0" in f and "txt" not in f:

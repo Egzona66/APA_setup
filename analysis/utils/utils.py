@@ -2,8 +2,49 @@ import sys
 sys.path.append("./")
 
 import numpy as np
+from loguru import logger
 
-from .calibrate_sensors import Calibration
+from fcutils.maths.utils import derivative
+
+from analysis.utils.calibrate_sensors import Calibration
+
+
+
+def get_onset_offset(signal, th, clean=True):
+    """
+        Get onset/offset times when a signal goes below>above and
+        above>below a given threshold
+        Arguments:
+            signal: 1d numpy array
+            th: float, threshold
+            clean: bool. If true ends before the first start and 
+                starts after the last end are removed
+    """
+    above = np.zeros_like(signal)
+    above[signal >= th] = 1
+
+    der = derivative(above)
+    starts = np.where(der > 0)[0]
+    ends = np.where(der < 0)[0]
+
+    if above[0] > 0:
+        starts = np.concatenate([[0], starts])
+    if above[-1] > 0:
+        ends = np.concatenate([ends, [len(signal)]])
+
+    if clean:
+        ends = np.array([e for e in ends if e > starts[0]])
+
+        if np.any(ends):
+            starts = np.array([s for s in starts if s < ends[-1]])
+
+    if not np.any(starts):
+        starts = np.array([0])
+    if not np.any(ends):
+        ends = np.array([len(signal)])
+
+    return starts, ends
+
 
 def baseline_sensor_data(values):
     return values - np.nanmedian(values)
@@ -23,16 +64,19 @@ def calibrate_sensors_data(sensors_data, sensors, calibration_data=None,
         :param weight_percent: if true the weights are expressed in percentage of the mouse weight
         :param mouse_weight: float, weight of the mouse whose data are being processed
     """
-    # subtract base voltage
-    if base_voltageFR is not None:
-        sensors_data['fr'] = sensors_data['fr'] - base_voltageFR
-    if base_voltageFL is not None:
-        sensors_data['fl'] = sensors_data['fl'] - base_voltageFL
-    if base_voltageHR is not None:
-        sensors_data['hr'] = sensors_data['hr'] - base_voltageHR
-    if base_voltageHL is not None:
-        sensors_data['hl'] = sensors_data['hl'] - base_voltageHL
-   
+    baselines = dict(
+        fr = base_voltageFR,
+        fl = base_voltageFL,
+        hr = base_voltageHR,
+        hl = base_voltageHL,
+    )
+
+    for ch, bl in baselines.items():
+        if bl is None:
+            raise ValueError(f'Channel: {ch} has no baseline for calibration')
+
+        sensors_data[ch] = sensors_data[ch] - bl
+
     # calibrate
     calibration = Calibration(calibration_data=calibration_data)
     calibrated =  {ch:calibration.correct_raw(np.float32(volts), ch) 
@@ -40,6 +84,11 @@ def calibrate_sensors_data(sensors_data, sensors, calibration_data=None,
 
     if weight_percent:
         calibrated = {ch:(values/mouse_weight)*100 for ch, values in calibrated.items()}
+
+    for ch, corrected in calibrated.items():
+        if np.any(corrected < -2):  # check that no negative values
+                logger.debug(f'Channel: {ch}: after correction we got some negative values: {np.min(corrected):.3f}')
+
     return calibrated
      
 
