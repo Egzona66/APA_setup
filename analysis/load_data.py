@@ -30,8 +30,8 @@ DEBUG = False  # set as true to have extra plots to check everything's OK
 # --------------------------------- Variables -------------------------------- #
 CONDITIONS = ('WT', )  # keep only data from these conditions
 
-fps = 600
-n_frames = 1500 # Number of frames to take after the "start" of the trial
+fps = 650
+n_frames = 1000 # Number of frames to take after the "start" of the trial
 
 calibrate_sensors = True
 weight_percent = True # If calibrate_sensors is True and this is true traces are
@@ -45,7 +45,7 @@ if not weight_percent or not correct_for_paw:
 
 sensors = ["fl", "fr", "hl", "hr"]
 
-frames_file = "D:\\Egzona\\Forceplate\\ALL_APA_trials_2021_new_analysis.csv"
+frames_file = "D:\\Egzona\\Forceplate\\080921_ALL_trials_2021_analysis.csv"
 calibration_file = "D:\\Egzona\\Forceplate\\forceplatesensors_calibration4.csv"
 
 # Folders to analyse

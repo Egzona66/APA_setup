@@ -16,7 +16,7 @@ class Inspector(Config,):
         manual_video_inspect(video_to_inspect)
 
 if __name__ == "__main__":
-    videofile = "D:\\Egzona\\Forceplate\\2021\\250121_DREADDs_EXP\\M_1L_cam0.avi"  # * <--- path to the video to analyse 
+    videofile = "D:\\Egzona\\Forceplate\\2021\\020921_GREEN\\020921_GREEN_M_none_cam0.avi"  # * <--- path to the video to analyse 
 
     nframes, width, height, fps, is_color = get_video_params(get_cap_from_file(videofile))
     print(f'Video has: {nframes} (wxh: {width} x {height}) at {round(fps, 2)}fps')

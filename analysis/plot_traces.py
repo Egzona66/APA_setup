@@ -63,7 +63,7 @@ COLORS = dict(
 '''
         Plot each trial
 '''
-liftoff_th = 6  # paw < 6% of boy weight is liftoff
+liftoff_th = 6  # paw < 6% of body weight is liftoff
 
 
 xkwargs = dict(
