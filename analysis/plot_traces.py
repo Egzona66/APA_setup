@@ -6,8 +6,10 @@ import seaborn as sns
 from pathlib import Path
 import numpy as np
 from rich.progress import track
-from myterial import light_blue, orange_dark, indigo, salmon, white, green, green_dark, salmon_dark, blue_grey_dark
+from myterial import light_blue, orange, indigo, salmon, white, green, green_dark, salmon_dark, blue_grey_dark
+from myterial import blue_darker, orange_darker, indigo_darker, salmon_darker
 from scipy.signal import iirnotch, filtfilt, resample
+from einops import repeat
 
 from fcutils.file_io.utils import check_file_exists
 from fcutils.file_io.io import load_json
@@ -23,7 +25,7 @@ import os
 sys.path.append('./')
 module_path = os.path.abspath(os.path.join('..'))
 sys.path.append(module_path)
-from analysis.utils.utils import get_onset_offset
+from analysis.utils.utils import get_onset_offset, resample_list_of_arrayes_to_avg_len
 
 from analysis.load_data import savepath, metadata_savepath, sensors
 
@@ -49,9 +51,17 @@ logger.info(f'Found {len(data)} trials')
 
 COLORS = dict(
         fr = light_blue,
-        fl = orange_dark,
+        fl = orange,
         hr = indigo,
         hl = salmon,
+        tot_weight = blue_grey_dark
+)
+
+COLORS_dark = dict(
+        fr = blue_darker,
+        fl = orange_darker,
+        hr = indigo_darker,
+        hl = salmon_darker,
         tot_weight = blue_grey_dark
 )
 
@@ -63,7 +73,15 @@ COLORS = dict(
 '''
         Plot each trial
 '''
-liftoff_th = 6  # paw < 6% of body weight is liftoff
+
+def style_axes(sensors, axes, xkwargs):
+        for ch, ax in zip(sensors, axes):
+                ax.set(title=ch, ylabel='weight %', xlabel='time wrt RF take off (s)', 
+                                xlim=[-.4, .05] if not metadata['STANDING_STILL'] else [0, 1.5], 
+                                **xkwargs)
+                ax.axvline(0, lw=4, ls='--', color=[.2, .2, .2], zorder=-1)
+                ax.axhline(0, lw=2, color='k', zorder=-1)
+
 
 
 xkwargs = dict(
@@ -75,59 +93,64 @@ cog_fig, cog_ax = plt.subplots(figsize=(12, 12))
 main_fig, main_axes = plt.subplots(figsize=(18, 12), ncols=2, nrows=2, sharex=True, sharey=True)
 main_axes = main_axes.flatten()
 clean_axes(main_fig)
+style_axes(sensors, main_axes, xkwargs={})
 
-# style main figure
-for ch, ax in zip(sensors, main_axes):
-        ax.set(title=ch, ylabel='weight %', xlabel='time wrt RF take off (s)', xlim=[-.5, .5], **xkwargs)
-        ax.axvline(0, lw=4, ls='--', color=[.2, .2, .2], zorder=-1)
-        ax.axhline(0, lw=2, color='k', zorder=-1)
-
+DATA_TO_ALIGN = {ch:np.full((len(data), 5000), np.nan) for ch in sensors}
 step_start_frames, all_sigs = [], []
 for i, trial in track(data.iterrows(), total=len(data)):
-        start = np.where(trial.fr_on_sensor == 0)[0][0]
+        if not metadata['STANDING_STILL']:
+                start = np.where(trial.fr_on_sensor == 0)[0][0]
+        else:
+                start = 0
         step_start_frames.append(start)
 
 
-        fig, axarr = plt.subplots(nrows=2, figsize=(16, 9), sharex=True)
+        # create a figure just for the trial
+        f, trial_axes = plt.subplots(figsize=(18, 12), ncols=2, nrows=2, sharex=True, sharey=True)
+        trial_axes = trial_axes.flatten()
+        clean_axes(main_fig)
+        style_axes(sensors, trial_axes, xkwargs={})
+
+        # iterate over the channels
         SIGS = []
         for n, ch in enumerate(sensors):
                 color = COLORS[ch]
 
                 # force fps to 600
                 raw = trial[ch]
-                on_sensor = trial[f'{ch}_on_sensor']
-                time = np.linspace(-start/trial.fps, (len(raw)-start)/trial.fps, len(raw))
+
+                if not metadata['STANDING_STILL']:
+                        time = np.linspace(-start/trial.fps, (len(raw)-start)/trial.fps, len(raw))
+                else:
+                        time = np.linspace(0, len(raw)/trial.fps, len(raw))
 
                 # notch filter noise
                 b_notch, a_notch = iirnotch(2.2, 3, trial.fps)
                 sig = filtfilt(b_notch, a_notch, raw)
                 SIGS.append(sig)
 
-                # plot raw and altered signals
-                lw = 4 if ch not in ('fr') else 5
+                # get time aligned data
+                if not metadata['STANDING_STILL']:
+                        start_idx = 2500 - start
+                        DATA_TO_ALIGN[ch][i, start_idx:start_idx+len(sig)] = sig
+                else:
+                        DATA_TO_ALIGN[ch][i, :len(sig)] = sig
 
-                axarr[0].plot(
-                        time, raw, lw=lw-3, color=color)
-                axarr[0].plot(
-                        time, sig, lw=lw, color=color, label=ch)
 
-                # plot channels derivatives
-                if 'tot' not in ch:
-                        axarr[1].plot(
-                                time,
-                                rolling_mean(derivative(sig), 30), 
-                                lw=3, color=color, label=ch)
 
-                # plot also in the main figure
-                if 'tot' not in ch:
-                        main_axes[n].plot(time[:start], sig[:start], lw=2, color=color, alpha=1)
-                        main_axes[n].plot(time[start:], sig[start:], lw=2, color=color, alpha=.25)
+                # plot in the main figure and the trial figure
+                for axes in (trial_axes, main_axes):
+                        if 'tot' not in ch:
+                                if not metadata['STANDING_STILL']:
+                                        axes[n].plot(time[:start], raw[:start], lw=2, color=color, alpha=.3)
+                                        axes[n].plot(time[start:], raw[start:], lw=2, color=color, alpha=.3)
+                                else:
+                                        axes[n].plot(time, raw, lw=2, color=color, alpha=1)
 
-                # mark when paw on sensors
-                axarr[0].plot(
-                        time,
-                        120 + 3 * on_sensor - n*5,
-                        lw=2, color=COLORS[ch], label=ch)
+        # save and close trial figure
+        f.savefig(save_fld/f'trial_{trial["name"]}')
+        plt.close(f)
+                
         all_sigs.append(np.vstack(SIGS).T)
 
         # plot center of gravity
@@ -145,28 +168,21 @@ for i, trial in track(data.iterrows(), total=len(data)):
                 color='salmon',
                 s=300,
         )
-        # mark stuff
-        axarr[0].axvline(0, lw=2, color='k', alpha=.6, ls='--', zorder=-1)
-        axarr[1].axvline(0, lw=2, color='k', alpha=.6, ls='--', zorder=-1)
 
-        axarr[0].axhline(liftoff_th, lw=6, color='k', alpha=.2, ls='--')
-        axarr[0].axhline(0, lw=2, color='k', zorder=-1)
-        axarr[0].legend()     
-        axarr[1].legend()
+        # break
 
-        axarr[0].set(ylabel='$W_{pc}$')     
+# register all signals in time and take average
+if not metadata['STANDING_STILL']:
+        DATA_TO_ALIGN = {ch:v[:, 2200:2800] for ch,v in DATA_TO_ALIGN.items()}  # keep only 0.5 either side of movement
+        time = np.linspace(-.5, .5, 600)
+else:
+        DATA_TO_ALIGN = {ch:v[:, :int(600*1.5)] for ch,v in DATA_TO_ALIGN.items()}  # keep only 0.5 either side of movement
+        time = np.linspace(0, 1.5, int(1.5*600))
 
-        axarr[1].set(ylabel='$\\frac{d W_{pc}}{dt}$', **xkwargs, xlabel='time (ms)', xlim=[-2, 2])
-
-        # save figure
-        clean_axes(fig)
-        save_figure(fig, str(save_fld/f"trial_plot_{trial['name']}"), verbose=False)
-
-        if i > 0:
-                plt.close(fig)
-
-        # if i == 2:
-        #         break   
+for n, ch in enumerate(sensors):
+        mu = np.nanmean(DATA_TO_ALIGN[ch], 0)
+        std = np.nanstd(DATA_TO_ALIGN[ch], 0)
+        plot_mean_and_error(mu, std, main_axes[n], color=COLORS_dark[ch], x=time)
 
 save_figure(main_fig, str(save_fld/f"all_trials"), verbose=False)
 if len(step_start_frames) == len(data):

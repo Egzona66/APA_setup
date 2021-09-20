@@ -3,11 +3,38 @@ sys.path.append("./")
 
 import numpy as np
 from loguru import logger
+import pandas as pd
+from scipy.signal import resample
+from scipy import stats
+import matplotlib.pyplot as plt
 
 from fcutils.maths.utils import derivative
 
 from analysis.utils.calibrate_sensors import Calibration
 
+
+def convolve_with_gaussian(data:np.ndarray, sigma:int):
+    x = np.linspace(0.0001, 0.9999, num=sigma)
+    norm = stats.norm(0, sigma)
+    kernel = norm.pdf(x)
+    kernel /= np.sum(kernel)
+
+    return np.convolve(data, kernel, mode='same')
+
+def resample_list_of_arrayes_to_avg_len(lst, N=None, interpolate=False):
+    """
+        Given a list of arrays of varying length, this function
+        resamples them so that they all have the 
+        average length.
+        Then it returns the vstack of the array
+    """
+    if N is None:
+        N = np.mean([len(x) for x in lst]).astype(np.int32)
+
+    if interpolate:
+        lst = [pd.Series(x).interpolate() for x in lst]
+
+    return np.vstack([resample(X, N) for X in lst])
 
 
 def get_onset_offset(signal, th, clean=True):
@@ -64,30 +91,45 @@ def calibrate_sensors_data(sensors_data, sensors, calibration_data=None,
         :param weight_percent: if true the weights are expressed in percentage of the mouse weight
         :param mouse_weight: float, weight of the mouse whose data are being processed
     """
-    baselines = dict(
-        fr = base_voltageFR,
-        fl = base_voltageFL,
-        hr = base_voltageHR,
-        hl = base_voltageHL,
-    )
 
-    for ch, bl in baselines.items():
-        if bl is None:
-            raise ValueError(f'Channel: {ch} has no baseline for calibration')
-
-        sensors_data[ch] = sensors_data[ch] - bl
+    # compute and subtract baselines
+    baselines = {}
+    for ch, data in sensors_data.items():
+        baseline = np.percentile(convolve_with_gaussian(data, 600)[1000:-1000], 1)
+        sensors_data[ch] = data - baseline
 
     # calibrate
-    calibration = Calibration(calibration_data=calibration_data)
+    calibration = Calibration(calibration_data=calibration_data, plot=False)
     calibrated =  {ch:calibration.correct_raw(np.float32(volts), ch) 
                                 for ch, volts in sensors_data.items() if ch in sensors}
+
+    # Get the total weight on sensors and check if it's > mous weight
+    tot_weight = convolve_with_gaussian(
+        np.sum(np.vstack(calibrated.values()), 0)[1000:-1000],  # discard artifacts at start/end
+        600
+    )
+    if np.any(tot_weight < -3):
+        f, ax = plt.subplots()
+        ax.plot(tot_weight, label='sensors weight', color='k')
+        ax.axhline(mouse_weight, lw=2, color='salmon', label='mouse weight')
+        ax.axhline(0, lw=2, color='green', label='0')
+        ax.legend()
+        calibration = Calibration(calibration_data=calibration_data, plot=True)
+
+        f, ax = plt.subplots()
+        for ch, data in sensors_data.items():
+            ax.plot(data, label=ch)
+        ax.legend()
+
+        plt.show()
+        raise ValueError('The ammount of weight on sensors is either negative or too large')
 
     if weight_percent:
         calibrated = {ch:(values/mouse_weight)*100 for ch, values in calibrated.items()}
 
-    for ch, corrected in calibrated.items():
-        if np.any(corrected < -2):  # check that no negative values
-                logger.debug(f'Channel: {ch}: after correction we got some negative values: {np.min(corrected):.3f}')
+    # for ch, corrected in calibrated.items():
+    #     if np.any(corrected < 0):  # check that no negative values
+    #             logger.warning(f'Channel: {ch}: after correction we got some negative values: {np.min(corrected):.3f}')
 
     return calibrated
      

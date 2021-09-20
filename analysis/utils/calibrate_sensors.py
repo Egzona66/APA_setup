@@ -54,10 +54,10 @@ class Calibration():
             :param plot: bool, if true the results of the fit are displayed.
         """
         self.calibration_data=calibration_data
-        self.fitted, weights, voltages = self.fit_calibration()
+        self.fitted, self.weights, self.voltages = self.fit_calibration()
 
         if plot:
-            self.plot_fitted(weights, voltages)
+            self.plot_fitted(self.weights, self.voltages)
 
     def parse_calibration_data(self):
         """

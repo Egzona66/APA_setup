@@ -1,25 +1,29 @@
 import sys
 sys.path.append("./")
 
-from pyinspect import install_traceback, search
+from pyinspect import install_traceback
 install_traceback(keep_frames=0, hide_locals=True)
 
 import pandas as pd
 import numpy as np
 import os
-from tqdm import tqdm
 from datetime import datetime
 import matplotlib.pyplot as plt
 from loguru import logger
 from pathlib import Path
 from rich.progress import track
 
-from fcutils.file_io.utils import check_file_exists, check_file_exists, check_create_folder
 from fcutils.file_io.io import load_csv_file, save_json
-from fcutils.maths.utils import rolling_mean
 
 from analysis.utils.analysis_utils import parse_folder_files
-from analysis.utils.utils import calibrate_sensors_data, correct_paw_used, compute_center_of_gravity, get_onset_offset
+from analysis.utils.utils import (
+    calibrate_sensors_data,
+    correct_paw_used,
+    compute_center_of_gravity,
+    get_onset_offset,
+    convolve_with_gaussian,
+    resample_list_of_arrayes_to_avg_len,
+)
 from analysis import paths
 
 # ---------------------------------------------------------------------------- #
@@ -28,10 +32,12 @@ from analysis import paths
 DEBUG = False  # set as true to have extra plots to check everything's OK
 
 # --------------------------------- Variables -------------------------------- #
+STANDING_STILL = False  # set to true to analyze trials in which the mice stay on the sensors without stepping off
 CONDITIONS = ('WT', )  # keep only data from these conditions
 
-fps = 650
-n_frames = 1000 # Number of frames to take after the "start" of the trial
+fps = 600   # all videos are converted to this fps
+n_seconds = 2 # Number of seconds to take before and after the start of the trial
+n_frames = n_seconds * fps
 
 calibrate_sensors = True
 weight_percent = True # If calibrate_sensors is True and this is true traces are
@@ -45,7 +51,7 @@ if not weight_percent or not correct_for_paw:
 
 sensors = ["fl", "fr", "hl", "hr"]
 
-frames_file = "D:\\Egzona\\Forceplate\\080921_ALL_trials_2021_analysis.csv"
+frames_file = "D:\\Egzona\\Forceplate\\150921_ALL_trials_2021_analysis.csv"
 calibration_file = "D:\\Egzona\\Forceplate\\forceplatesensors_calibration4.csv"
 
 # Folders to analyse
@@ -64,8 +70,6 @@ metadata_savepath = os.path.join(main_fld, "metadata.json")
 # ---------------------------------------------------------------------------- #
 
 def run():
-
-
     for fpath in (frames_file, calibration_file):
         if not Path(fpath).exists():
             raise FileNotFoundError(f'Could not find file: {fpath}')
@@ -78,7 +82,7 @@ def run():
         return string.split('_M')[0].split('_F')[0]
     frames_data['subfolder'] = frames_data.Video.apply(clean)
 
-    # check that all experiments sufolers are found
+    # check that all experiments subfolers are found
     subfolds_names = [fld.name for fld in sub_flds]
     if not np.all(frames_data.subfolder.isin(subfolds_names)):
         errors = frames_data.loc[~frames_data.subfolder.isin(subfolds_names)]
@@ -90,7 +94,7 @@ def run():
 
     # load calibration data
     calibration_data = load_csv_file(calibration_file)
-        
+    
     logger.debug('All checks passed and all files found')
     # ---------------------------------------------------------------------------- #
     #                                 PROCESS DATA                                 #
@@ -100,14 +104,14 @@ def run():
     data = {"name":[], "fr":[], "fl":[], "hr":[], "hl":[], "CoG":[], "centered_CoG":[], "start":[], "end":[], 'condition':[], 'fps':[]}
     for i, trial in track(frames_data.iterrows(), total=len(frames_data)):
         keep = True  # to be changed if trial is BAD
+
         # --------------------------- Fetch files for trial -------------------------- #=
-        csv_file, video_files = parse_folder_files(main_fld / trial.subfolder, trial.Video)
+        csv_file, _ = parse_folder_files(main_fld / trial.subfolder, trial.Video)
         logger.info(f'Found csv file: {csv_file}')
 
-        # Load and trim sensors data
+        # Load the sensors data and smooth them a bit
         sensors_data = load_csv_file(csv_file)
-
-        sensors_data = {ch:rolling_mean(sensors_data[ch], 60) for ch in sensors}
+        sensors_data = {ch:convolve_with_gaussian(sensors_data[ch], 25) for ch in sensors}
 
         # debug plots: RAW data
         # if DEBUG:
@@ -161,7 +165,7 @@ def run():
 
         # get comulative weight on sensors    
         sensors_data['tot_weight'] = np.sum(np.vstack([sensors_data[p] for p in sensors]), 0)
-        sensors_data['weight_on_sensors'] = (sensors_data['tot_weight'] > 80).astype(np.int) 
+        sensors_data['weight_on_sensors'] = (sensors_data['tot_weight'] > 70).astype(np.int) 
         sensors_data['on_sensors'] = (sensors_data['weight_on_sensors'] & sensors_data['all_paws_on_sensors']).astype(np.int)
         
         # get trial start (last time on_sensors == 1 before trial.Start)
@@ -170,12 +174,22 @@ def run():
 
         # remove trials where conditions are wrong
         baseline_duration = np.abs((trial.Start - start)/trial.fps)
-        if baseline_duration > 5 or baseline_duration < .2:
+        if baseline_duration < 0:
             logger.warning(f'Excluding trial: {trial.Video} because the baseline was either too long or too short: {round(baseline_duration, 3)}s')
             keep=False
-        if not sensors_data['on_sensors'][trial.Start - int(.2 * trial.fps)]:
-            logger.warning(f'Excluding trial: {trial.Video} because at trial.Start the conditions were not met, sorry')
+        elif baseline_duration > 5:
+            # keep only 5 seconds of baseline
+            baseline_duration = 5
+            start = int(trial.Start - 5 * trial.fps)
+
+        if not all_on_sensors[start] == 1:
+            logger.warning('Not all paws on sensors at start, exluding')
             keep=False
+
+        if keep:
+            if not sensors_data['on_sensors'][trial.Start - int(.2 * trial.fps)]:
+                logger.warning(f'Excluding trial: {trial.Video} because at trial.Start the conditions were not met, sorry')
+                keep=False
 
         # debug plots: CALIBRATE data
         if DEBUG:
@@ -241,6 +255,7 @@ def run():
         use_paw=use_paw,
         frames_file=frames_file,
         sensors=sensors,
+        STANDING_STILL=STANDING_STILL,
     )
     logger.info("Saving metadata to: {}".format(metadata_savepath))
     save_json(metadata_savepath, metadata)
