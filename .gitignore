@@ -1,6 +1,9 @@
+logs
+logs/*
 */.vscode
 .vscode
 .vscode/
+analysis_archive
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

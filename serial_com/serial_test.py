@@ -1,4 +1,5 @@
 import sys
+
 sys.path.append("./")
 
 import os
@@ -22,7 +23,7 @@ class SerialTest(SerialComm):
 
         # self.connect_serial()
 
-    def test_read(self, acquire_for = 100):
+    def test_read(self, acquire_for=100):
         data = np.zeros((acquire_for, 5))
 
         delta_t = []
@@ -30,15 +31,16 @@ class SerialTest(SerialComm):
         acquired = 0
         while True:
             read = self.read_serial()
-            if read is not None: 
+            if read is not None:
                 data[acquired, :] = read
                 acquired += 1
                 print(acquired)
                 now = time.time()
-                delta_t.append((now-start)*1000)
+                delta_t.append((now - start) * 1000)
                 start = now
 
-                if acquired == acquire_for: break
+                if acquired == acquire_for:
+                    break
 
         f, ax = plt.subplots()
         ax.plot(delta_t)
@@ -51,9 +53,6 @@ class SerialTest(SerialComm):
 
         # pin = self.arduino.get_pin("d:10:i")
         # print(pin.read())
-
-
-
 
 
 if __name__ == "__main__":
