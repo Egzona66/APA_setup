@@ -1,30 +1,7 @@
-from pathlib import Path
-import os
-from typing import Tuple
 import numpy as np
 
+
 from analysis.fixtures import sensors_vectors
-
-
-def parse_folder_files(folder: Path, exp_name: str) -> Tuple[Path, Path]:
-    folder = str(folder)
-    video_files = {}
-    for f in os.listdir(folder):
-        if exp_name not in f:
-            continue
-
-        if "csv" in f:
-            csv_file = os.path.join(folder, f)
-        elif "cam0" in f and "txt" not in f:
-            video_files["cam0"] = os.path.join(folder, f)
-        # elif "cam1" in f and "txt" not in f:
-        # video_files["cam1"] = os.path.join(folder, f)
-    try:
-        return Path(csv_file), Path(video_files)
-    except:
-        raise FileNotFoundError(
-            f"Could not fine csv or video files for {exp_name} in folder {folder}"
-        )
 
 
 def correct_paw_used(sensors_data, paw_used):
@@ -51,10 +28,11 @@ def compute_cog(sensors_data: dict) -> np.ndarray:
     # scale each vector by the % of weight on the sensor on each frame
     # so that each scaled vector is in the 0-1 range
     scaled_vectors = {
-        k: sensors_data[k] * vec / 100 for k, vec in sensors_vectors.items()
+        k: sensors_data[k].reshape(-1, 1) * vec / 100
+        for k, vec in sensors_vectors.items()
     }
 
     # sum the vectors to get the CoM vector
-    CoM = np.sum(np.vstack(scaled_vectors.values()), 1)
+    CoM = np.sum(np.dstack(scaled_vectors.values()), 2)
 
     return CoM

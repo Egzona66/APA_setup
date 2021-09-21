@@ -7,7 +7,6 @@ from tpd import recorder
 import matplotlib.pyplot as plt
 
 from analysis.fixtures import sensors, colors
-from analysis.utils import convolve_with_gaussian
 
 
 class Calibration:
@@ -20,7 +19,7 @@ class Calibration:
         """
         self.calibration_data: pd.DataFrame = calibration_data
         self.weights, self.voltages = self.parse_calibration_data()
-        self.fitted_curves = self.fit()
+        self.fitted = self.fit()
 
         self.plot_fit()
         logger.info("Calibration fitted to calibrationd data")
@@ -75,7 +74,7 @@ class Calibration:
         ax.set(title="calibration curve", xlabel="voltage", ylabel="weight (g)")
         ax.legend()
 
-        recorder.add_figure(f)
+        recorder.add_figure(f, "calibration_curve")
         plt.close(f)
 
     def correct_raw(self, voltages: np.ndarray, ch: str) -> np.ndarray:
@@ -89,14 +88,6 @@ class Calibration:
             If weight_percentage is true then the values in grams are converted to
             % of mouse body weight
         """
-        logger.debug(
-            f"Calibrating data - (as %: {weight_percentage} | mouse weight: {mouse_weight}g)"
-        )
-        # compute and subtract baselines to 0 data correctly
-        for ch, data in sensors_data.items():
-            baseline = np.percentile(convolve_with_gaussian(data, 600)[1000:-1000], 1)
-            sensors_data[ch] = data - baseline
-
         # volts -> grams
         calibrated = {
             ch: self.correct_raw(volts, ch)
@@ -104,8 +95,20 @@ class Calibration:
             if ch in sensors
         }
 
+        # compute and subtract baselines to 0 data correctly
+        for ch, data in calibrated.items():
+            abs_data = np.abs(data.copy())
+            high_th = np.percentile(abs_data, 50)
+            masked = data.copy()
+            masked[abs_data > high_th] = np.nan
+            # baseline = np.percentile(data, 30)
+            baseline = np.nanmean(masked)
+            calibrated[ch] = data - baseline
+
         # grams -> %
         if weight_percentage:
-            calibrated = {ch: grams / mouse_weight for ch, grams in calibrated.items()}
+            calibrated = {
+                ch: grams / mouse_weight * 100 for ch, grams in calibrated.items()
+            }
 
         return calibrated

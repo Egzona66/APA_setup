@@ -1,14 +1,14 @@
 from myterial import (
     light_blue,
-    light_blue_dark,
+    light_blue_darker,
     orange,
-    orange_dark,
+    orange_darker,
     indigo,
-    indigo_dark,
+    indigo_darker,
     salmon,
-    salmon_dark,
+    salmon_darker,
     blue_grey,
-    blue_grey_dark,
+    blue_grey_darker,
 )
 import numpy as np
 
@@ -19,12 +19,12 @@ colors = dict(
 )
 
 dark_colors = dict(
-    fr=light_blue_dark,
-    fl=orange_dark,
-    hr=indigo_dark,
-    hl=salmon_dark,
-    tot_weight=blue_grey_dark,
-    CoG=blue_grey_dark,
+    fr=light_blue_darker,
+    fl=orange_darker,
+    hr=indigo_darker,
+    hl=salmon_darker,
+    tot_weight=blue_grey_darker,
+    CoG=blue_grey_darker,
 )
 
 # XY coordinates in CM of each sensor from the center of the array

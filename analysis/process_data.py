@@ -2,16 +2,21 @@ from loguru import logger
 from pathlib import Path
 import pandas as pd
 import numpy as np
+import sys
 
-from fcutils.path import read_yaml, subdirs
+sys.path.append("./")
+from fcutils.path import from_yaml, subdirs
 from fcutils.progress import track
-from fcutils.math.signals import convolve_with_gaussian, get_onset_offset
-from fcutils.math.array import resample_list_of_arrayes_to_avg_len
+from fcutils.maths.signals import convolve_with_gaussian, get_onset_offset
+from fcutils.maths.array import resample_list_of_arrayes_to_avg_len
 from tpd import recorder
+from fcutils.path import files
 
 from analysis.calibration import Calibration
 from analysis import utils
 from analysis.fixtures import sensors
+
+# from analysis.debug import plot_sensors_data
 
 
 def clean(string: str) -> str:
@@ -72,7 +77,7 @@ class DataProcessing:
         """
         # initialize and retrieve params used for previous processing
         processor = DataProcessing()
-        params = read_yaml("./logs/params.yaml")
+        params = from_yaml("./logs/params.yaml")
 
         logger.debug(f"Setting previously stored params: {params}")
         processor.load_set_params(params)
@@ -81,9 +86,11 @@ class DataProcessing:
         logger.info(f"Loading previously saved data from: {processor.data_savepath}")
         processor.data = pd.read_hdf(processor.data_savepath, key="hdf")
 
+        return processor
+
     def load_set_params(self, params: dict = None):
         # load parameters and set to class attributes
-        params = params or read_yaml("./analysis/params.yaml")
+        params = params or from_yaml("./analysis/params.yaml")
         for name, param in params.items():
             if isinstance(param, str):
                 setattr(self, name, Path(param))
@@ -97,7 +104,6 @@ class DataProcessing:
 
         if not self.frames_file.exists() or not self.calibration_file.exists():
             raise ValueError("Frames or calibration files not found!")
-        recorder.copy("./analysis/params.yaml")
 
     def preliminary_checks(self):
         """
@@ -118,11 +124,11 @@ class DataProcessing:
             Resamples sensors data to match the target fps
         """
         n_seconds = len(sensors_data["fr"]) / originalfps
-        target_n_samples = n_seconds * self.fps
+        target_n_samples = int(n_seconds * self.fps)
 
         for k, v in sensors_data.items():
             adjusted = resample_list_of_arrayes_to_avg_len([v], target_n_samples)
-            sensors_data[k] = adjusted
+            sensors_data[k] = adjusted.T.ravel()
         return sensors_data
 
     def compute_sensors_engagement(self, sensors_data: dict) -> dict:
@@ -161,17 +167,24 @@ class DataProcessing:
             Loads each trial's data, calibrates and filters the sensors data and then checks
             if the trial meets the criteria for analysis. If it does it's added to the dataset.
         """
-        for i, trial in track(self.trials_metadata, total=len(self.trials_metadata)):
-            logger.debug(f"Processing trial: {trial}")
 
+        excluded = []
+        for i, trial in track(
+            self.trials_metadata.iterrows(), total=len(self.trials_metadata)
+        ):
             # fetch data
-            csv_file, video_files = utils.parse_folder_files(
-                self.main_fld / trial.subfolder, trial.Video
+            csv_file = files(
+                self.main_fld / trial.subfolder, f"{trial.Video}_analoginputs.csv"
             )
+            if csv_file is None:
+                raise ValueError("Could not find CSV file for experiment!")
+            elif isinstance(csv_file, list):
+                raise ValueError("Found too many CSV files!!")
+
             sensors_data = pd.read_csv(csv_file)
             sensors_data = {ch: sensors_data[ch] for ch in sensors}
             logger.debug(
-                f"Loading senors data from CSV file: {csv_file.name} for tiral: {trial}"
+                f"Loading senors data from CSV file: {csv_file.name} for trial: {trial['Video']}"
             )
 
             # resample data to match target FPS
@@ -180,8 +193,9 @@ class DataProcessing:
 
             # smooth signals
             kernel_width = int(self.fps * self.smoothing_window)
-            for k, v in sensors_data:
+            for k, v in sensors_data.items():
                 sensors_data[k] = convolve_with_gaussian(v, kernel_width)
+                sensors_data[k][:40] = sensors_data[k][-40:] = np.mean(sensors_data[k])
 
             # calibrate sensors
             if self.calibrate:
@@ -196,23 +210,44 @@ class DataProcessing:
             # get when mouse on sensors
             sensors_data = self.compute_sensors_engagement(sensors_data)
 
-            # get trial start (and trial bounds)
-            start_frame = int((trial.Start / trial.fps) * self.fps)
-            if self.STANDING_STILL:
-                on_sensors = start_frame
+            # get trial start (first frame in which FL paw lifts off in a window around manually specified start)
+            manual_start_frame = int((trial.Start / trial.fps) * self.fps)
+
+            if not self.STANDING_STILL:
+                half_window = int(self.trial_start_detection_window * self.fps)
+                start_frame = (
+                    np.where(
+                        sensors_data["fr_on_sensor"][
+                            manual_start_frame
+                            - half_window : manual_start_frame
+                            + half_window
+                        ]
+                        == 0
+                    )[0][0]
+                    - 2
+                )
+                start_frame += manual_start_frame - half_window
             else:
-                on_sensors = get_onset_offset(sensors_data["on_sensors"][:start_frame])[
-                    0
-                ][-1]
+                start_frame = manual_start_frame
+
             trial_start = start_frame - int(self.n_secs_before * self.fps)
             trial_end = start_frame + int(self.n_secs_after * self.fps)
 
             # check that trial matches criteria
+            if self.STANDING_STILL:
+                on_sensors = start_frame
+            else:
+                on_sensors = get_onset_offset(
+                    sensors_data["on_sensors"][:start_frame], 0.5
+                )[0][-1]
+
             if (start_frame - on_sensors) / self.fps < self.min_baseline_duration:
                 logger.warning("Basleline too short, excluding trial")
+                excluded.append(trial["Video"])
                 continue
             if not sensors_data["on_sensors"][start_frame]:
                 logger.warning("Mouse not on sensors at trial start, excluding trial.")
+                excluded.append(trial["Video"])
                 continue
 
             # cut data
@@ -227,9 +262,11 @@ class DataProcessing:
                     self.data[ch].append(v)
 
             self.data["CoG"].append(utils.compute_cog(sensors_data))
-            self.data["condition "].append(trial.Condition)
+            self.data["condition"].append(trial.Condition)
 
         self.data = pd.DataFrame(self.data)
+        logger.info(f"Excluded {len(excluded)} trials: {excluded}")
+        self.wrapup()
 
     def wrapup(self):
         """
@@ -237,6 +274,8 @@ class DataProcessing:
         """
         self.data.to_hdf(self.data_savepath, key="hdf")
         logger.info(f"Saving data for {len(self.data)} trials at: {self.data_savepath}")
+
+        recorder.copy("./analysis/params.yaml")
 
 
 if __name__ == "__main__":

@@ -12,19 +12,29 @@ correct_for_paw: True  #  adjust all data to make it look like mice always step 
 
 
 # ----------------------------------- paths ---------------------------------- #
-frames_file: "D:\\Egzona\\Forceplate\\080921_ALL_trials_2021_analysis.csv"  # CSV with trials start frames and metadata
-calibration_file: "D:\\Egzona\\Forceplate\\forceplatesensors_calibration4.csv"  # CSV with volts/gr calibration data
-main_fld: "D:\\Egzona\\Forceplate\\2021"  # main data folder.
+# frames_file: "D:\\Egzona\\Forceplate\\080921_ALL_trials_2021_analysis.csv"  # CSV with trials start frames and metadata
+# calibration_file: "D:\\Egzona\\Forceplate\\forceplatesensors_calibration4.csv"  # CSV with volts/gr calibration data
+# main_fld: "D:\\Egzona\\Forceplate\\2021"  # main data folder.
 
+frames_file: "/Volumes/EGZONA/Egzona/Forceplate/200921_ALL_trials_2021_analysis.csv"  # CSV with trials start frames and metadata
+# frames_file: "/Volumes/EGZONA/Egzona/Forceplate/Stand_still_analysis_FP.csv"  # CSV with trials start frames and metadata
+
+calibration_file: "/Volumes/EGZONA/Egzona/Forceplate/forceplatesensors_calibration4.csv"  # CSV with volts/gr calibration data
+main_fld: "/Volumes/EGZONA/Egzona/Forceplate/2021"  # main data folder.
 
 # --------------------------------- analysis --------------------------------- #
 fps: 600  # all trials are scaled in time to have this target FPS
 
-smoothing_window: 0.05  # in seconds - width of smoothing gaussian kernel
+smoothing_window: 0.1  # in seconds - width of smoothing gaussian kernel
 on_sensor_weight_th: 6  # in % of mouse body weight: when > th weight the mouse is 'on' the sensor
-on_all_sensors_weight_th: 80  # in % of body weight: when > th weight across all sensors the mouse is on sensors
+on_all_sensors_weight_th: 70  # in % of body weight: when > th weight across all sensors the mouse is on sensors
 
-n_secs_before: 2  # number of seconds before start of trial to keep for plotting etc
-n_secs_after: 1  # number of seconds after start of trial to keep for plotting etc
+n_secs_before: 0.5  # number of seconds before start of trial to keep for plotting etc
+n_secs_after: 0.5  # number of seconds after start of trial to keep for plotting etc
 
 min_baseline_duration: 0  # in seconds | min duration of baseline to keep mouse
+trial_start_detection_window: 0.5  # in seconds | trial start is the first frame in which FR moves in a small winodw around Egzona's trial start frame
+
+
+# --------------------------------- plotting --------------------------------- #
+plot_individual_trials: False
