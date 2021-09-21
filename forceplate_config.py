@@ -1,4 +1,4 @@
-from utils.constants import *
+from utils import *
 
 
 # Define a config class with all the options for data acquisition and post-hoc analysis
@@ -39,38 +39,6 @@ class Config:
                         "hr":.02,
                         "hl":.02}
     time_on_sensors = 400 # mouse has to be on all sensors this number of ms before the door opens
-
-    """
-        ############## POST-HOC ANALYSIS  ####################
-    """
-    analysis_config = {
-        "data_folder": "D:\\Egzona\\Plot-videos DLC", # where the data to analyse are stored
-        "experiment_name": "140819_M1R2",
-        "plot_colors": { "fr":magenta, 
-                        "fl":blue, 
-                        "hr":red, 
-                        "hl":green},
-
-        # * for composite video
-        # ? run video_analysis.py
-        "start_clip_time_s": None, # ? Create clips start at this point, in SECONDS
-        "start_clip_time_frame": 1, # ? Create clips start at this point, in FRAMES
-        "clip_n_frames": 100 , # duration of the clip in frames
-        "clip_name":"test", 
-
-        "outputdict":{ # for ffmpeg
-                    # '-vcodec': 'mpeg4',  #  high fps low res
-                    "-vcodec": "libx264",   #   low fps high res
-                    '-crf': '0',
-                    '-preset': 'slow',  # TODO check this
-                    '-pix_fmt': 'yuvj444p',
-                    "-framerate": "10", #   output video framerate 
-                    # TODO this doesnt work FPS
-                },
-
-
-    }
-
 
     """
         ############## LIVE PLOTTING  ####################
