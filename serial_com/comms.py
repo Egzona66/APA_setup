@@ -149,7 +149,7 @@ class SerialComm:
 
 	def read_door_status(self):
 		ds = self.door_status_pin.read()
-		if ds > .4:
+		if ds > .3:
 			self.door_status = "closed"
 		else:
 			self.door_status = "open"

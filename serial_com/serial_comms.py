@@ -32,7 +32,7 @@ def available_ports():
             pass
     print(result)
 
-def connect_port(com="COM5"):
+def connect_port(com="COM4"):
     ser = serial.Serial(com, timeout=0)
     ser.baudrate  = 115200
     # ser.open()

@@ -10,14 +10,15 @@
 Dynamixel Dxl(DXL_BUS_SERIAL1);
 
 int servo_id = 1;
-int speed = 600;
-int duration = 1100;
+int speed = 500;
+int duration = 1000;
 byte temp = 0;  // store the messages sent through USB serials in bytes
 int door_status = 0; // keeps track of whether the door is up or down --  0 -> door down // 1 -> door up
 volatile float voltage=0;
 
 int open_door_command_pin = 10;
 int door_status_pin = 12;
+int bpod_pin = 14;
 
 void setup() {
   // put your setup code here, to run once:
@@ -26,6 +27,7 @@ void setup() {
   
   pinMode(open_door_command_pin, INPUT_PULLDOWN);
   pinMode(door_status_pin, OUTPUT);
+  pinMode(bpod_pin, OUTPUT);
   digitalWrite(door_status_pin, HIGH);  
 
 }
@@ -52,9 +54,11 @@ void close_door(){
 
 void output_door_status(){
  if (door_status == 1){
-  digitalWrite(door_status_pin, HIGH);  
+  digitalWrite(door_status_pin, HIGH);
+  digitalWrite(bpod_pin, HIGH);  
  } else {
   digitalWrite(door_status_pin, LOW);
+  digitalWrite(bpod_pin, LOW);
 }
 }
 

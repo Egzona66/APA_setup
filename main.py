@@ -23,7 +23,8 @@ class Main(Camera, SerialComm, Analyzer, LivePlotter, Config):
         Camera.__init__(self)
         SerialComm.__init__(self)
         LivePlotter.__init__(self)
-
+        
+        
 
     def setup_experiment_files(self):
         # Takes care of creating a folder to keep the files of this experiment
@@ -98,11 +99,11 @@ class Main(Camera, SerialComm, Analyzer, LivePlotter, Config):
         # Start streaming videos
         self.exp_start_time = time.time() * 1000 #  experiment starting time in milliseconds
 
-        try:
-            self.stream_videos() # <- t
-        except Exception as e:
-            print("Acquisition terminted with error: ", e)
-            self.terminate_experiment()
+        #try:
+        self.stream_videos() # <- t
+        #except Exception as e:
+        #    print("Acquisition terminted with error: ", e)
+        #    self.terminate_experiment()
 
 
     

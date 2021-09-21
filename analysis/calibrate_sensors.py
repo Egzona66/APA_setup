@@ -27,7 +27,7 @@ class Calibration(Config):
         self.calibrate_sensors(plot=True)
 
     def calibrate_sensors(self, plot=False):
-        calibration_data = load_csv_file("D:\\Egzona\\forceplatesensors_calibration2.csv")
+        calibration_data = load_csv_file("E:\\Egzona\\forceplatesensors_calibration4.csv")
 
         readouts = dict(fr=[], fl=[], hr=[], hl=[])
         weights = []

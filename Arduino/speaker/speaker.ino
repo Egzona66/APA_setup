@@ -1,5 +1,5 @@
 const int command_pin = 11; // command from python -> sensors arduino
-const int speaker_pin = 6; // output to speaker
+const int speaker_pin = 7; // output to speaker
 
 int tone_frequency = 500; 
 int tone_duration_ms = 1; // !!!! if you change this you will have to change comms.py too!
