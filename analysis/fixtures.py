@@ -9,13 +9,14 @@ from myterial import (
     salmon_darker,
     blue_grey,
     blue_grey_darker,
+    green,
 )
 import numpy as np
 
 sensors = ["fl", "fr", "hl", "hr"]
 
 colors = dict(
-    fr=light_blue, fl=orange, hr=indigo, hl=salmon, tot_weight=blue_grey, CoG=blue_grey,
+    fr=light_blue, fl=orange, hr=indigo, hl=salmon, tot_weight=blue_grey, CoG=green,
 )
 
 dark_colors = dict(

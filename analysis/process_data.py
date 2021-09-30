@@ -31,6 +31,7 @@ class DataProcessing:
         "hr": [],
         "hl": [],
         "CoG": [],
+        "CoG_centered": [],
         "condition": [],
         "tot_weight": [],
         "on_sensors": [],
@@ -239,12 +240,13 @@ class DataProcessing:
             else:
                 on_sensors = get_onset_offset(
                     sensors_data["on_sensors"][:start_frame], 0.5
-                )[0][-1]
+                )[0][-1] + 1
 
-            if (start_frame - on_sensors) / self.fps < self.min_baseline_duration:
-                logger.warning("Basleline too short, excluding trial")
-                excluded.append(trial["Video"])
-                continue
+                if (start_frame - on_sensors) / self.fps < self.min_baseline_duration:
+                    logger.warning("Basleline too short, excluding trial")
+                    excluded.append(trial["Video"])
+                    continue
+
             if not sensors_data["on_sensors"][start_frame]:
                 logger.warning("Mouse not on sensors at trial start, excluding trial.")
                 excluded.append(trial["Video"])
@@ -261,7 +263,9 @@ class DataProcessing:
                 if ch in self.data.keys():
                     self.data[ch].append(v)
 
+            # add CoG (including centered at the CoG of t=0)
             self.data["CoG"].append(utils.compute_cog(sensors_data))
+            self.data["CoG_centered"].append(self.data["CoG"][-1] - self.data["CoG"][-1][0, :])
             self.data["condition"].append(trial.Condition)
 
         self.data = pd.DataFrame(self.data)

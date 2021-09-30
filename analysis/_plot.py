@@ -1,9 +1,33 @@
 import matplotlib.pyplot as plt
 from typing import Tuple
 import numpy as np
+import matplotlib
 
 from fcutils.plot.figure import clean_axes
 from myterial import blue_grey
+
+def move_figure(f, x, y):
+    """Move figure's upper left corner to pixel (x, y)"""
+    backend = matplotlib.get_backend()
+    if backend == 'TkAgg':
+        f.canvas.manager.window.wm_geometry("+%d+%d" % (x, y))
+    elif backend == 'WXAgg':
+        f.canvas.manager.window.SetPosition((x, y))
+    else:
+        # This works for QT and GTK
+        # You can also use window.setGeometry
+        f.canvas.manager.window.move(x, y)
+
+
+def initialize_polar_plot_figure(savename):
+   fig, ax = plt.subplots(figsize=(6, 6), subplot_kw={'projection': 'polar'}) 
+   fig._save_name = savename
+
+   ax.grid(True)
+   ax.set_theta_zero_location("N")
+   # ax.set_theta_direction(-1)
+
+   return fig, ax
 
 
 def initialize_trial_figure(
@@ -23,7 +47,9 @@ def initialize_trial_figure(
             AABBCCC
             AABBCCC
             DDEECCC
-            DDEEFFF
+            DDEEGGG
+            FFFFGGG
+            FFFFGGG
             """
     )
     axes_names = [
@@ -33,6 +59,7 @@ def initialize_trial_figure(
         ("D", "hl"),
         ("E", "hr"),
         ("F", "tot_weight"),
+        ('G', 'all')
     ]
     axes = {name: axes[letter] for letter, name in axes_names}
 
@@ -78,11 +105,17 @@ def initialize_trial_figure(
         xlabel="time (s)",
         ylabel="tot weight %",
     )
-    axes["CoG"].set(title="CoG", xlabel="position (cm)", ylabel="position (cm)")
+    axes["all"].set(
+        xticks=xticks,
+        xticklabels=xticklabels,
+        xlabel="time (s)",
+        ylabel="weight %",
+    )
+    axes["CoG"].set(title="CoG", xlabel="position (cm)", ylabel="position (cm)", xlim=[-1, 1], ylim=[-1, 1])
     axes["CoG"].grid(True)
 
     # create a vertical and horizontal lines
-    for ax in ["fl", "fr", "hl", "hr", "tot_weight"]:
+    for ax in ["fl", "fr", "hl", "hr", "tot_weight", 'all']:
         axes[ax].axvline(
             int(n_sec_before * fps), lw=2, ls="--", color=blue_grey, zorder=-1
         )
