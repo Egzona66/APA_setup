@@ -91,7 +91,7 @@ for ch in sensors + ["tot_weight", "CoG"]:
         palette1 = make_palette(white, black, int(len(cog)/2),)
         palette2 = make_palette(black, white, int(len(cog)/2),)
         colors = palette1 + palette2
-        main_axes[ch].scatter(cog[:, 0], cog[:, 1], c=colors, s=100, lw=.5, ec=[.2, .2, .2])
+        main_axes[ch].scatter(cog[:, 0], cog[:, 1], c=colors, s=100)
 
         # Plot CoG average in Polar coordinates
         rho, phi = cart2pol(cog[:, 0], cog[:, 1])

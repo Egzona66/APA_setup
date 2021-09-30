@@ -86,6 +86,7 @@ class DataProcessing:
         # load data
         logger.info(f"Loading previously saved data from: {processor.data_savepath}")
         processor.data = pd.read_hdf(processor.data_savepath, key="hdf")
+        logger.info(f"Loaded {len(processor.data)} trials -----\n\n")
 
         return processor
 
@@ -216,18 +217,22 @@ class DataProcessing:
 
             if not self.STANDING_STILL:
                 half_window = int(self.trial_start_detection_window * self.fps)
-                start_frame = (
-                    np.where(
-                        sensors_data["fr_on_sensor"][
-                            manual_start_frame
-                            - half_window : manual_start_frame
-                            + half_window
-                        ]
-                        == 0
-                    )[0][0]
-                    - 2
-                )
-                start_frame += manual_start_frame - half_window
+                try:
+                    start_frame = (
+                        np.where(
+                            sensors_data["fr_on_sensor"][
+                                manual_start_frame
+                                - half_window : manual_start_frame
+                                + half_window
+                            ]
+                            == 0
+                        )[0][0]
+                        - 2
+                    )
+                except IndexError:
+                    start_frame = manual_start_frame
+                else:
+                    start_frame += manual_start_frame - half_window
             else:
                 start_frame = manual_start_frame
 

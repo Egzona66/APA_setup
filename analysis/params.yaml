@@ -33,7 +33,7 @@ n_secs_before: 0.35  # number of seconds before start of trial to keep for plott
 n_secs_after: 0.35  # number of seconds after start of trial to keep for plotting etc
 
 min_baseline_duration: 0  # in seconds | min duration of baseline to keep mouse
-trial_start_detection_window: 0.5  # in seconds | trial start is the first frame in which FR moves in a small winodw around Egzona's trial start frame
+trial_start_detection_window: 0.15  # in seconds | trial start is the first frame in which FR moves in a small winodw around Egzona's trial start frame
 
 
 # --------------------------------- plotting --------------------------------- #
