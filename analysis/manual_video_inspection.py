@@ -1,7 +1,7 @@
 import sys
 
 sys.path.append("./")
-from forceplate_config import Config
+#from forceplate_config import Config
 
 from fcutils.video import get_video_params, get_cap_from_file
 import cv2  # import opencv
@@ -86,18 +86,19 @@ def manual_video_inspect(videofilepath):
 # 2) Run this script
 
 
-class Inspector(Config,):
-    def __init__(self, video_to_inspect):
-        Config.__init__(self)
+#class Inspector(Config,):
+ #   def __init__(self, video_to_inspect):
+  #      Config.__init__(self)
 
-        manual_video_inspect(video_to_inspect)
+   #     manual_video_inspect(video_to_inspect)
 
 
 if __name__ == "__main__":
-    videofile = "D:\\Egzona\\Forceplate\\2021\\020921_GREEN\\020921_GREEN_M_none_cam0.avi"  # * <--- path to the video to analyse
+    videofile = "E:\\Egzona\\Forceplate\\2021\\121021_DTR_GREEN\\121021_DTR_GREEN_M_1L-3_cam0.avi"  # * <--- path to the video to analyse
 
     nframes, width, height, fps, is_color = get_video_params(
         get_cap_from_file(videofile)
     )
     print(f"Video has: {nframes} (wxh: {width} x {height}) at {round(fps, 2)}fps")
-    inspector = Inspector(videofile)
+    #inspector = Inspector(videofile)
+    manual_video_inspect(videofile)

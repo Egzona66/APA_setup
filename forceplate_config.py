@@ -12,8 +12,8 @@ class Config:
     #     n_sensors = 3 # ! fix this because a sensor is broken
 
     # ! Change these for every recording
-    experiment_folder = "F:\\Egzona\\2021\\160921_RED_F_1R_3" # ? This should be changed for everyexperiment to avoid overwriting 
-    experiment_name = "160921_RED_F_1R_3"  # should be something like YYMMDD_MOUSEID, all files for an experiment will start with this name
+    experiment_folder = "F:\\Egzona\\2021\\DTR experiments" # ? This should be changed for everyexperiment to avoid overwriting 
+    experiment_name = "181021_DTR_GREEN_M_1L"  # should be something like YYMMDD_MOUSEID, all files for an experiment will start with this name
     experiment_duration = 10*60  # acquisition duration in seconds, alternatively set as None
 
     # * Live video frames display and sensors data plotting
@@ -21,7 +21,7 @@ class Config:
     live_plotting = False
 
     # * Check that these options are correct
-    com_port = "COM4"  # port of the arduino running Firmata for data acquisition
+    com_port = "COM3"  # port of the arduino running Firmata for data acquisition
     acquisition_framerate = 600  # fps of camera triggering -> NEED TO SPECIFY SLEEP TIME IN ARDUINO for frame triggering
 
 
@@ -66,8 +66,8 @@ class Config:
             "frame_width": "192",  # must be a multiple of 32
             "frame_height": "160", # must be a multiple of 32
             "gain": "12",
-            "frame_offset_y": "672",
-            "frame_offset_x": "704",
+            "frame_offset_y": "640",
+            "frame_offset_x": "448",
         },
 
 

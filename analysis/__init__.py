@@ -6,7 +6,9 @@ install_traceback(keep_frames=0, hide_locals=True)
 
 logger.configure(handlers=[{"sink": RichHandler(markup=True), "format": "{message}"}])
 
+try:
+    from tpd import recorder
 
-from tpd import recorder
-
-recorder.start(base_folder=".", name="logs", timestamp=False)
+    recorder.start(base_folder=".", name="logs", timestamp=False)
+except:
+    pass

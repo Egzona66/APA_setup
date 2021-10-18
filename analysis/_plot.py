@@ -38,20 +38,23 @@ def initialize_trial_figure(
         where the sensors' traces can be displayed
     """
     # create figure
-    f = plt.figure(figsize=(16, 8))
+    f = plt.figure(figsize=(18, 10))
     f._save_name = savename
 
     # create axes
     axes = f.subplot_mosaic(
         """
-            AABBCCC
-            AABBCCC
-            DDEECCC
-            DDEEGGG
-            FFFFGGG
-            FFFFGGG
+            AABBCCS
+            AABBCCQ
+            DDEEXXR
+            DDEEXXT
+            FFGGYYV
+            FFGGYYU
             """
     )
+    for ax in "QRTVU":
+        axes[ax].axis("off")
+
     axes_names = [
         ("A", "fl"),
         ("B", "fr"),
@@ -59,7 +62,10 @@ def initialize_trial_figure(
         ("D", "hl"),
         ("E", "hr"),
         ("F", "tot_weight"),
-        ('G', 'all')
+        ('G', 'all'),
+        ('X', 'X'),
+        ('Y', 'Y'),
+        ('S', 'S'),
     ]
     axes = {name: axes[letter] for letter, name in axes_names}
 
@@ -111,8 +117,28 @@ def initialize_trial_figure(
         xlabel="time (s)",
         ylabel="weight %",
     )
-    axes["CoG"].set(title="CoG", xlabel="position (cm)", ylabel="position (cm)", xlim=[-1, 1], ylim=[-1, 1])
+    axes["CoG"].set(title="CoG", xlabel="position (cm)", ylabel="position (cm)", xlim=[-0.75, 0.75], ylim=[-0.75, 0.75])
     axes["CoG"].grid(True)
+
+    axes["S"].set(title="CoG initial", xlabel="x", ylabel="y", xlim=[-1.25, 1.25], ylim=[-1.25, 1.25])
+    axes["X"].set(ylabel="X", ylim=[-.75, .75],         
+        xticks=xticks,
+        xticklabels=xticklabels,
+        xlabel="time (s)",
+        )
+    axes["Y"].set(ylabel="Y", ylim=[-.75, .75],        
+         xticks=xticks,
+        xticklabels=xticklabels,
+        xlabel="time (s)",
+    )
+
+    axes["CoG"].axhline(0, ls="--", color=[.6, .6, .6], zorder=-1)
+    axes["CoG"].axvline(0, ls="--", color=[.6, .6, .6], zorder=-1)
+    axes["S"].axhline(0, ls="--", color=[.6, .6, .6], zorder=-1)
+    axes["S"].axvline(0, ls="--", color=[.6, .6, .6], zorder=-1)
+    axes["Y"].axhline(0, ls="--", color=[.6, .6, .6], zorder=2)
+    axes["X"].axhline(0, ls="--", color=[.6, .6, .6], zorder=2)
+
 
     # create a vertical and horizontal lines
     for ax in ["fl", "fr", "hl", "hr", "tot_weight", 'all']:

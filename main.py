@@ -10,10 +10,10 @@ from camera.camera import Camera
 from serial_com.comms import SerialComm
 from utils.file_io_utils import *
 
-from analysis.analysis import Analyzer
+# from analysis.analysis import Analyzer
 from forceplate_config import Config
 
-class Main(Camera, SerialComm, Analyzer, Config):
+class Main(Camera, SerialComm, Config):
     _tone_command = 0 # used to write to csv when tone command starts and ends
     _door_command = 0 # used to write to csv when door command starts and ends
 
@@ -21,7 +21,7 @@ class Main(Camera, SerialComm, Analyzer, Config):
         Config.__init__(self)  # load the config paramaters
         Camera.__init__(self)
         SerialComm.__init__(self)
-        LivePlotter.__init__(self)
+        # LivePlotter.__init__(self)
         
         
 

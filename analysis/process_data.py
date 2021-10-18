@@ -5,6 +5,7 @@ import numpy as np
 import sys
 
 sys.path.append("./")
+sys.path.append(r"C:\Users\ucqfajm\Documents\GitHub\APA_setup\analysis")
 from fcutils.path import from_yaml, subdirs
 from fcutils.progress import track
 from fcutils.maths.signals import convolve_with_gaussian, get_onset_offset
@@ -270,7 +271,7 @@ class DataProcessing:
 
             # add CoG (including centered at the CoG of t=0)
             self.data["CoG"].append(utils.compute_cog(sensors_data))
-            self.data["CoG_centered"].append(self.data["CoG"][-1] - self.data["CoG"][-1][0, :])
+            self.data["CoG_centered"].append(self.data["CoG"][-1] - self.data["CoG"][-1][start_frame - trial_start, :])
             self.data["condition"].append(trial.Condition)
 
         self.data = pd.DataFrame(self.data)

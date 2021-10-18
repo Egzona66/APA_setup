@@ -11,7 +11,7 @@ from fcutils.plot.elements import plot_mean_and_error
 from fcutils.progress import track
 from fcutils.maths.coordinates import cart2pol
 from myterial.utils import make_palette
-from myterial import black,white,green 
+from myterial import black,white,green, blue_light, salmon, blue_dark
 
 from analysis.process_data import DataProcessing
 from analysis.fixtures import sensors, colors, dark_colors
@@ -23,6 +23,7 @@ from analysis._plot import initialize_trial_figure, initialize_polar_plot_figure
         - CoM traces
         - indidivual sensors traces
 """
+USE_COG = "CoG_centered"  # or CoG_centered
 
 # load previously saved data
 data = DataProcessing.reload()
@@ -59,7 +60,18 @@ for i, trial in track(
 
         # plot CoG (and mark start/end)
         figure_axes["CoG"].plot(
-            trial.CoG_centered[:, 0], trial.CoG_centered[:, 1], lw=2, alpha=0.2, color=colors["CoG"], zorder=-1,
+            trial[USE_COG][:, 0], trial[USE_COG][:, 1], lw=2, alpha=0.2, color=colors["CoG"], zorder=-1,
+        )
+        figure_axes['X'].plot(trial[USE_COG][:, 0], lw=2, alpha=.2, color=colors["CoG"], zorder=-1)
+        figure_axes['Y'].plot(trial[USE_COG][:, 1], lw=2, alpha=.2, color=colors["CoG"], zorder=-1)
+        figure_axes['S'].scatter(trial.CoG[0, 0], trial.CoG[0,1], alpha=1, color=colors["CoG"], zorder=-1)
+
+        # also on polar plot
+        rho, phi = cart2pol(trial[USE_COG][0, 0], trial[USE_COG][0, 1])
+        phi = np.radians(phi - 90)
+
+        polar_ax.scatter(
+            phi, rho,  alpha=1, color=colors["CoG"], zorder=-1, s=200, label=None
         )
 
         if not data.plot_individual_trials:
@@ -80,18 +92,24 @@ for ch in sensors + ["tot_weight", "CoG"]:
 
         if ch != 'tot_weight':
             plot_mean_and_error(avg, std, main_axes['all'], color=dark_colors[ch], lw=4)
-        plt.legend([sensors])
+        main_axes['all'].legend([sensors])
 
     else:
         # Plot CoG average in Cartesian Coordinates
-        cog = np.mean(np.dstack([v for v in data.data["CoG"].values]), 2)
-        cog -= cog[0, :]  # centered at the value of t=0
+        cog = np.mean(np.dstack([v for v in data.data[USE_COG].values]), 2)
+        # cog -= cog[0, :]  # centered at the value of t=0
         time = np.linspace(-data.n_secs_before, data.n_secs_after, len(cog))
 
-        palette1 = make_palette(white, black, int(len(cog)/2),)
-        palette2 = make_palette(black, white, int(len(cog)/2),)
+        palette1 = make_palette(blue_light, blue_dark, int(len(cog)/2),)
+        palette2 = make_palette(blue_dark, white, int(len(cog)/2),)
         colors = palette1 + palette2
         main_axes[ch].scatter(cog[:, 0], cog[:, 1], c=colors, s=100)
+        main_axes[ch].plot(cog[::30, 0], cog[::30, 1], "-", color=[.4, .4, .4], lw=2, zorder=200)
+        main_axes[ch].scatter(cog[::30, 0], cog[::30, 1], color=[.4, .4, .4], s=80, zorder=200)
+
+
+        main_axes['X'].scatter(np.arange(len(cog)), cog[:, 0], c=colors, s=10)
+        main_axes['Y'].scatter(np.arange(len(cog)), cog[:, 1],  c=colors, s=10)
 
         # Plot CoG average in Polar coordinates
         rho, phi = cart2pol(cog[:, 0], cog[:, 1])
