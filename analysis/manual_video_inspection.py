@@ -6,6 +6,7 @@ sys.path.append("./")
 from fcutils.video import get_video_params, get_cap_from_file
 import cv2  # import opencv
 import os
+from pathlib import Path
 
 
 def manual_video_inspect(videofilepath):
@@ -94,7 +95,10 @@ def manual_video_inspect(videofilepath):
 
 
 if __name__ == "__main__":
-    videofile = "E:\\Egzona\\Forceplate\\2021\\121021_DTR_GREEN\\121021_DTR_GREEN_M_1L-3_cam0.avi"  # * <--- path to the video to analyse
+    videofile = "E:\\Egzona\\Forceplate\\2021\\121021_DTR_GREEN\\121021_DTR_GREEN_M_1L_cam0.avi"  # * <--- path to the video to analyse
+
+    if not Path(videofile).exists():
+        raise FileNotFoundError('Video not found')
 
     nframes, width, height, fps, is_color = get_video_params(
         get_cap_from_file(videofile)

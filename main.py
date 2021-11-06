@@ -7,7 +7,7 @@ from threading import Thread
 import time
 
 from camera.camera import Camera
-from serial_com.comms import SerialComm
+from serial_com.comms import SerialCommp
 from utils.file_io_utils import *
 
 # from analysis.analysis import Analyzer

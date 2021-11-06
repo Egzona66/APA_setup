@@ -2,6 +2,7 @@ from loguru import logger
 from pathlib import Path
 import pandas as pd
 import numpy as np
+
 import sys
 
 sys.path.append("./")
@@ -241,9 +242,7 @@ class DataProcessing:
             trial_end = start_frame + int(self.n_secs_after * self.fps)
 
             # check that trial matches criteria
-            if self.STANDING_STILL:
-                on_sensors = start_frame
-            else:
+            if not self.STANDING_STILL:
                 on_sensors = get_onset_offset(
                     sensors_data["on_sensors"][:start_frame], 0.5
                 )[0][-1] + 1

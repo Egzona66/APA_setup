@@ -96,20 +96,26 @@ for ch in sensors + ["tot_weight", "CoG"]:
 
     else:
         # Plot CoG average in Cartesian Coordinates
-        cog = np.mean(np.dstack([v for v in data.data[USE_COG].values]), 2)
+        COGs = np.dstack([v for v in data.data[USE_COG].values])
+        cog = np.mean(COGs, 2)
+        cog_std = np.std(COGs, 2)
+
         # cog -= cog[0, :]  # centered at the value of t=0
         time = np.linspace(-data.n_secs_before, data.n_secs_after, len(cog))
 
         palette1 = make_palette(blue_light, blue_dark, int(len(cog)/2),)
         palette2 = make_palette(blue_dark, white, int(len(cog)/2),)
         colors = palette1 + palette2
-        main_axes[ch].scatter(cog[:, 0], cog[:, 1], c=colors, s=100)
-        main_axes[ch].plot(cog[::30, 0], cog[::30, 1], "-", color=[.4, .4, .4], lw=2, zorder=200)
-        main_axes[ch].scatter(cog[::30, 0], cog[::30, 1], color=[.4, .4, .4], s=80, zorder=200)
+        main_axes[ch].plot(cog[:, 0], cog[:, 1], c=[.3, .3, .3], lw=3)
+        main_axes[ch].scatter(cog[0, 0], cog[0, 1], c=[.3, .3, .3], ec=[.3, .3, .3], lw=3, s=100, zorder=100)
+        main_axes[ch].scatter(cog[-1, 0], cog[-1, 1], c='white', ec=[.3, .3, .3], lw=3, s=100, zorder=100)
 
+        # plot COG XY traces separately
+        plot_mean_and_error(cog[:, 0], cog_std[:, 0], main_axes['X'])
+        plot_mean_and_error(cog[:, 1], cog_std[:, 1], main_axes['Y'])
 
-        main_axes['X'].scatter(np.arange(len(cog)), cog[:, 0], c=colors, s=10)
-        main_axes['Y'].scatter(np.arange(len(cog)), cog[:, 1],  c=colors, s=10)
+        # main_axes['X'].scatter(np.arange(len(cog)), cog[:, 0], c=colors, s=10)
+        # main_axes['Y'].scatter(np.arange(len(cog)), cog[:, 1],  c=colors, s=10)
 
         # Plot CoG average in Polar coordinates
         rho, phi = cart2pol(cog[:, 0], cog[:, 1])
