@@ -12,9 +12,9 @@ class Config:
     #     n_sensors = 3 # ! fix this because a sensor is broken
 
     # ! Change these for every recording
-    experiment_folder = "F:\\Egzona\\2021\\DTR experiments" # ? This should be changed for everyexperiment to avoid overwriting 
-    experiment_name = "191021_DTR_GREEN_M_1L-3"  # should be something like YYMMDD_MOUSEID, all files for an experiment will start with this name
-    experiment_duration = 10*60  # acquisition duration in seconds, alternatively set as None
+    experiment_folder = "F:\\Egzona\\2022\\CTRL experiments" # ? This should be changed for everyexperiment to avoid overwriting 
+    experiment_name = "1_VGLUT_M_none"  # should be something like YYMMDD_MOUSEID, all files for an experiment will start with this name
+    experiment_duration = 5*60  # acquisition duration in seconds, alternatively set as None
 
     # * Live video frames display and sensors data plotting
     live_display = False  # show the video frames as video is acquired

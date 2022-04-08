@@ -95,7 +95,7 @@ def manual_video_inspect(videofilepath):
 
 
 if __name__ == "__main__":
-    videofile = "E:\\Egzona\\Forceplate\\2021\\121021_DTR_GREEN\\121021_DTR_GREEN_M_1L_cam0.avi"  # * <--- path to the video to analyse
+    videofile = "F:\\Egzona\\2021\\DTR experiments\\161221_DTR_RED_F_1R-1_cam0.avi"  # * <--- path to the video to analyse
 
     if not Path(videofile).exists():
         raise FileNotFoundError('Video not found')

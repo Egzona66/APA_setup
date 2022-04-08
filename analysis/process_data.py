@@ -94,7 +94,12 @@ class DataProcessing:
 
     def load_set_params(self, params: dict = None):
         # load parameters and set to class attributes
-        params = params or from_yaml("./analysis/params.yaml")
+        try:
+            params = params or from_yaml("./analysis/params.yaml")
+        except:
+            params = from_yaml("./params.yaml")
+        
+
         for name, param in params.items():
             if isinstance(param, str):
                 setattr(self, name, Path(param))
