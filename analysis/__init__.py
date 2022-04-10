@@ -9,6 +9,7 @@ logger.configure(handlers=[{"sink": RichHandler(markup=True), "format": "{messag
 try:
     from tpd import recorder
 
-    recorder.start(base_folder=".", name="logs", timestamp=False)
-except:
+    recorder.start(base_folder=".", folder_name="logs", timestamp=False)
+except Exception as e:
+    logger.warning(f"Could not start TPD recorder: {e}")
     pass

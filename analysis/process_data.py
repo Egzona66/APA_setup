@@ -39,13 +39,12 @@ class DataProcessing:
         "on_sensors": [],
     }
 
-    def __init__(self):
+    def __init__(self, reloading=False):
         """
             Loads trials metadata, processes the trials' sensors data
             and filters trials based on them meeting criteria for analysis.
         """
         self.load_set_params()
-
         # get trials subplots
         self.trials_dirs = subdirs(self.main_fld)
         logger.info(f"Found {len(self.trials_dirs)} subfolders")
@@ -53,24 +52,25 @@ class DataProcessing:
         # Save path
         self.data_savepath = self.main_fld / "data.h5"
 
-        # load trials data and get subfolders name
-        self.trials_metadata = pd.read_csv(self.frames_file)
-        self.trials_metadata["subfolder"] = self.trials_metadata.Video.apply(clean)
-        logger.info(f"Found metadata for {len(self.trials_metadata)} trials.")
+        if not reloading:
+            # load trials data and get subfolders name
+            self.trials_metadata = pd.read_csv(self.frames_file)
+            self.trials_metadata["subfolder"] = self.trials_metadata.Video.apply(clean)
+            logger.info(f"Found metadata for {len(self.trials_metadata)} trials.")
 
-        # filter trials based on conditions to analyze
-        self.trials_metadata = self.trials_metadata.loc[
-            self.trials_metadata.Condition.isin(self.CONDITIONS)
-        ]
-        logger.info(
-            f"Keeping {len(self.trials_metadata)} for conditions: {self.CONDITIONS}"
-        )
+            # filter trials based on conditions to analyze
+            self.trials_metadata = self.trials_metadata.loc[
+                self.trials_metadata.Condition.isin(self.CONDITIONS)
+            ]
+            logger.info(
+                f"Keeping {len(self.trials_metadata)} for conditions: {self.CONDITIONS}"
+            )
 
-        # check data
-        self.preliminary_checks()
+            # check data
+            self.preliminary_checks()
 
-        # prepare calibration
-        self.calibration_util = Calibration(pd.read_csv(self.calibration_file))
+            # prepare calibration
+            self.calibration_util = Calibration(pd.read_csv(self.calibration_file))
 
     @classmethod
     def reload(cls):
@@ -79,7 +79,7 @@ class DataProcessing:
             pre-processed data
         """
         # initialize and retrieve params used for previous processing
-        processor = DataProcessing()
+        processor = DataProcessing(reloading=True)
         params = from_yaml("./logs/params.yaml")
 
         logger.debug(f"Setting previously stored params: {params}")
@@ -111,8 +111,11 @@ class DataProcessing:
         )
         logger.info(f"Caliration file: {self.calibration_file}.")
 
-        if not self.frames_file.exists() or not self.calibration_file.exists():
-            raise ValueError("Frames or calibration files not found!")
+        if not self.frames_file.exists():
+            raise ValueError(f"Frames files not found!\n{self.frames_file}")
+
+        if not self.calibration_file.exists():
+            raise ValueError(f"Calibration files not found!\n{self.calibration_file}")
 
     def preliminary_checks(self):
         """

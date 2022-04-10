@@ -1,6 +1,8 @@
 DEBUG: True
 CONDITIONS:
   - WT
+  - CTRL
+  - DTR
   # - CNO ...
 
 STANDING_STILL: False  # set to true when processing standing still trials
@@ -12,9 +14,9 @@ correct_for_paw: True  #  adjust all data to make it look like mice always step 
 
 
 # ----------------------------------- paths ---------------------------------- #
-frames_file: "E:\\Egzona\\Forceplate\\081221_ALL_trials_2021_analysis.csv"  # CSV with trials start frames and metadata
-calibration_file: "E:\\Egzona\\Forceplate\\forceplatesensors_calibration4.csv"  # CSV with volts/gr calibration data
-main_fld: "E:\\Egzona\\Forceplate\\2021"  # main data folder.
+frames_file: "/Volumes/EGZONA/Egzona/Forceplate/100422_ALLtrials_CTRL-DTR_conditions.csv"  # CSV with trials start frames and metadata
+calibration_file: "/Volumes/EGZONA/Egzona/Forceplate/forceplatesensors_calibration4.csv"  # CSV with volts/gr calibration data
+main_fld: "/Volumes/EGZONA/Egzona/Forceplate/2021"  # main data folder.
 
 # frames_file: "/Volumes/EGZONA/Egzona/Forceplate/071221_ALL_trials_2021_analysis.csv"  # CSV with trials start frames and metadata
 # frames_file: "/Volumes/EGZONA/Egzona/Forceplate/Stand_still_analysis_FP.csv"  # CSV with trials start frames and metadata
