@@ -35,8 +35,11 @@ class DataProcessing:
         "CoG": [],
         "CoG_centered": [],
         "condition": [],
+        "strain": [],
         "tot_weight": [],
         "on_sensors": [],
+        "movement_onset_frame": [],
+        "video": [],
     }
 
     def __init__(self, reloading=False):
@@ -280,6 +283,10 @@ class DataProcessing:
             self.data["CoG"].append(utils.compute_cog(sensors_data))
             self.data["CoG_centered"].append(self.data["CoG"][-1] - self.data["CoG"][-1][start_frame - trial_start, :])
             self.data["condition"].append(trial.Condition)
+            self.data["strain"].append(trial.Strain)
+
+            self.data["movement_onset_frame"].append(start_frame)
+            self.data["video"].append(trial["video"])
 
         self.data = pd.DataFrame(self.data)
         logger.info(f"Excluded {len(excluded)} trials: {excluded}")
