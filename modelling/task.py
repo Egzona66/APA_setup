@@ -14,8 +14,7 @@ class RunThroughCorridor(composer.Task):
                 arena,
                 walker_spawn_position=(0, 0, 0),
                 walker_spawn_rotation=None,
-                target_velocity=3.0,
-                contact_termination=True,
+                contact_termination=False,
                 terminate_at_height=-0.5,
                 physics_timestep=0.005,
                 control_timestep=0.025):
@@ -52,11 +51,10 @@ class RunThroughCorridor(composer.Task):
         enabled_observables += self._walker.observables.kinematic_sensors
         enabled_observables += self._walker.observables.dynamic_sensors
         enabled_observables.append(self._walker.observables.sensors_touch)
-        enabled_observables.append(self._walker.observables.egocentric_camera)
+        # enabled_observables.append(self._walker.observables.egocentric_camera)
         for observable in enabled_observables:
             observable.enabled = True
 
-        self._vel = target_velocity
         self._contact_termination = contact_termination
         self._terminate_at_height = terminate_at_height
 
@@ -91,6 +89,8 @@ class RunThroughCorridor(composer.Task):
                 (contact.geom1 in set2 and contact.geom2 in set1))
 
     def before_step(self, physics, action, random_state):
+        if isinstance(action, tuple):
+            action = action[0]
         self._walker.apply_action(physics, action, random_state)
 
     def after_step(self, physics, random_state):
@@ -115,14 +115,14 @@ class RunThroughCorridor(composer.Task):
             return 1.
 
     def get_reward(self, physics):
-        # walker_xvel = physics.bind(self._walker.root_body).subtree_linvel[0]
-        # xvel_term = rewards.tolerance(
-        #     walker_xvel, (self._vel, self._vel),
-        #     margin=self._vel,
-        #     sigmoid='linear',
-        #     value_at_margin=0.0)
-        # return xvel_term
+        walker_xvel = physics.bind(self._walker.root_body).subtree_linvel[0]
+        xvel_term = rewards.tolerance(
+            walker_xvel, (1, 1),
+            margin=1,
+            sigmoid='linear',
+            value_at_margin=0.0)
+        return xvel_term
 
-        xpos = physics.bind(self._walker.root_body).xpos[0]
-        L = self._arena._corridor_length
-        return 1.0 - (L-xpos)/L
+        # xpos = physics.bind(self._walker.root_body).xpos[0]
+        # L = self._arena._corridor_length
+        # return 1.0 - (L-xpos)/L

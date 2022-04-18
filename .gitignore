@@ -1,7 +1,12 @@
 video.mp4
+*.zip
+*.mp4
+*.gif
 */.vscode
 .vscode
 .vscode/
+logs/*
+.logs/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
