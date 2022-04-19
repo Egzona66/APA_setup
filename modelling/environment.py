@@ -47,6 +47,8 @@ def build_environment(random_state=None):
 
 
 
+def flatten_obs(obs, valid_keys):
+    return np.hstack(list({k:v for k, v in obs.items() if k in valid_keys}.values())).astype(np.float32)
 
 
 class RLEnvironment(gym.Env):
@@ -61,9 +63,8 @@ class RLEnvironment(gym.Env):
     def __init__(self,):
         self.env = build_environment()
 
-        self.observation_space = convert_dm_control_to_gym_space(self.env.observation_spec())
-        self.OBS_NAMES = list(self.observation_space.keys())
-        self.action_space = convert_dm_control_to_gym_space(self.env.action_spec(), settype=np.int32)
+        self.observation_space, self.obs_keys = convert_dm_control_to_gym_space(self.env.observation_spec())
+        self.action_space = convert_dm_control_to_gym_space(self.env.action_spec(), settype=np.float32)
 
 
     def seed(self, seed):
@@ -72,7 +73,7 @@ class RLEnvironment(gym.Env):
  
     def step(self, action):
         timestep = self.env.step(action)
-        observation = {k:v for k, v in timestep.observation.items() if k in self.OBS_NAMES}
+        observation = flatten_obs(timestep.observation, self.obs_keys)
         reward = timestep.reward
         done = timestep.last()
         info = {}
@@ -80,7 +81,7 @@ class RLEnvironment(gym.Env):
     
     def reset(self):
         timestep = self.env.reset()
-        return {k:v for k, v in timestep.observation.items() if k in self.OBS_NAMES}
+        return flatten_obs(timestep.observation, self.obs_keys)
 
     def render(self, mode='rgb_array', height=None, width=None, camera_id=0):
         '''Returns RGB frames from a camera.'''
@@ -108,5 +109,18 @@ def convert_dm_control_to_gym_space(dm_control_space, settype=None):
         return space
     elif isinstance(dm_control_space, dict):
         vals = [convert_dm_control_to_gym_space(v, settype=settype) for v in dm_control_space.values()]
-        space = spaces.Dict({k: v for k,v in zip(dm_control_space.keys(), vals) if v is not None})
-        return space
+        # space = spaces.Dict({k: v for k,v in zip(dm_control_space.keys(), vals) if v is not None})
+
+        # turn all the values into a spaces.Box
+        LOW = []
+        HIGH = []
+        ndim = 0
+        valid_keys = []
+        for k, val in zip(dm_control_space.keys(), vals):
+            if val is None: continue
+            valid_keys.append(k)
+            LOW.extend(list(val.low))
+            HIGH.extend(list(val.high))
+            ndim += val.shape[0]
+
+        return spaces.Box(low=np.array(LOW), high=np.array(HIGH), shape=(ndim,), dtype=np.float32), valid_keys

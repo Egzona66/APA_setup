@@ -14,7 +14,7 @@ class RunThroughCorridor(composer.Task):
                 arena,
                 walker_spawn_position=(0, 0, 0),
                 walker_spawn_rotation=None,
-                contact_termination=False,
+                contact_termination=True,
                 terminate_at_height=-0.5,
                 physics_timestep=0.005,
                 control_timestep=0.025):
@@ -61,6 +61,8 @@ class RunThroughCorridor(composer.Task):
         self.set_timesteps(
             physics_timestep=physics_timestep, control_timestep=control_timestep)
 
+        self.__ntsteps = 0
+
     @property
     def root_entity(self):
         return self._arena
@@ -72,6 +74,7 @@ class RunThroughCorridor(composer.Task):
 
     def initialize_episode(self, physics, random_state):
         self._walker.reinitialize_pose(physics, random_state)
+        self.__ntsteps = 0
 
         self._failure_termination = False
         walker_foot_geoms = set(self._walker.ground_contact_geoms)
@@ -115,6 +118,9 @@ class RunThroughCorridor(composer.Task):
             return 1.
 
     def get_reward(self, physics):
+        self.__ntsteps += 1
+
+
         walker_xvel = physics.bind(self._walker.root_body).subtree_linvel[0]
         xvel_term = rewards.tolerance(
             walker_xvel, (1, 1),
@@ -123,6 +129,12 @@ class RunThroughCorridor(composer.Task):
             value_at_margin=0.0)
         return xvel_term
 
-        # xpos = physics.bind(self._walker.root_body).xpos[0]
+        # # body = physics.bind(self._walker.root_body)
+        # # xpos = body.subtree_com[0]
+
+        # xpos = self._walker.observables.position(physics)[0]
+        # # print(xpos)
         # L = self._arena._corridor_length
         # return 1.0 - (L-xpos)/L
+
+        # # return self.__ntsteps

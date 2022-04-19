@@ -16,7 +16,7 @@ class Forceplate(Corridor):
 
     def _build(self,
                 corridor_width=.4,
-                corridor_length=3,
+                corridor_length=10,
                 visible_side_planes=True,
                 name='empty_corridor'):
         """Builds the corridor.
