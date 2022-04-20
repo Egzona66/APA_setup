@@ -47,15 +47,19 @@ class Forceplate(Corridor):
         alpha = _DEFAULT_ALPHA if visible_side_planes else 0.0
         self._ground_plane = self._mjcf_root.worldbody.add(
             'geom', type='plane', rgba=[0.1, 0.1, 0.1, 1], size=[1, 1, 1])
+
         self._left_plane = self._mjcf_root.worldbody.add(
             'geom', type='plane', xyaxes=[1, 0, 0, 0, 0, 1], size=[1, 1, 1],
             rgba=[1, 0, 0, alpha], group=_SIDE_WALLS_GEOM_GROUP)
+
         self._right_plane = self._mjcf_root.worldbody.add(
             'geom', type='plane', xyaxes=[-1, 0, 0, 0, 0, 1], size=[1, 1, 1],
             rgba=[1, 0, 0, alpha], group=_SIDE_WALLS_GEOM_GROUP)
+
         self._near_plane = self._mjcf_root.worldbody.add(
             'geom', type='plane', xyaxes=[0, 1, 0, 0, 0, 1], size=[1, 1, 1],
             rgba=[1, 0, 0, alpha], group=_SIDE_WALLS_GEOM_GROUP)
+            
         self._far_plane = self._mjcf_root.worldbody.add(
             'geom', type='plane', xyaxes=[0, -1, 0, 0, 0, 1], size=[1, 1, 1],
             rgba=[1, 0, 0, alpha], group=_SIDE_WALLS_GEOM_GROUP)

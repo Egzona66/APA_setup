@@ -9,7 +9,7 @@ from modelling.utils import grab_frames, setup_video
 from modelling.environment import RLEnvironment
 
 
-model = A2C.load("logs/rl_model_450000_steps.zip")
+model = A2C.load("logs/standstill/standstill_45000_steps.zip")
 
 
 # make video
@@ -23,6 +23,8 @@ obs = env.reset()
 for i in track(range(video_length + 1), description="Recording video", total=video_length + 1):
     action = model.predict(obs)
     obs, _, _, _ = env.step(action)
+
+    print(action)
 
     frame = grab_frames(env.env)
     video.write(frame)

@@ -51,7 +51,7 @@ class RunThroughCorridor(composer.Task):
         enabled_observables += self._walker.observables.kinematic_sensors
         enabled_observables += self._walker.observables.dynamic_sensors
         enabled_observables.append(self._walker.observables.sensors_touch)
-        # enabled_observables.append(self._walker.observables.egocentric_camera)
+        enabled_observables.append(self._walker.observables.egocentric_camera)
         for observable in enabled_observables:
             observable.enabled = True
 
@@ -118,23 +118,43 @@ class RunThroughCorridor(composer.Task):
             return 1.
 
     def get_reward(self, physics):
-        self.__ntsteps += 1
+        # return _actuators_activation(physics, self._walker)
+        # return _upright_reward(physics, self._walker, deviation_angle=30)
+        return _speed_reward(physics, self._walker)
 
 
-        walker_xvel = physics.bind(self._walker.root_body).subtree_linvel[0]
-        xvel_term = rewards.tolerance(
-            walker_xvel, (1, 1),
-            margin=1,
-            sigmoid='linear',
-            value_at_margin=0.0)
-        return xvel_term
+def _speed_reward(physics, walker):
+    walker_xvel = physics.bind(walker.root_body).subtree_linvel[0]
+    xvel_term = rewards.tolerance(
+        walker_xvel, (1, 1),
+        margin=1,
+        sigmoid='linear',
+        value_at_margin=0.0)
+    return xvel_term  
 
-        # # body = physics.bind(self._walker.root_body)
-        # # xpos = body.subtree_com[0]
+def _actuators_activation(physics, walker):
+    activations = walker.observables.actuator_activation(physics)
+    return np.linalg.norm(np.ones_like(activations)) - np.linalg.norm(activations**2)
 
-        # xpos = self._walker.observables.position(physics)[0]
-        # # print(xpos)
-        # L = self._arena._corridor_length
-        # return 1.0 - (L-xpos)/L
-
-        # # return self.__ntsteps
+def _upright_reward(physics, walker, deviation_angle=0):
+    """Returns a reward proportional to how upright the torso is.
+    Args:
+    physics: an instance of `Physics`.
+    walker: the focal walker.
+    deviation_angle: A float, in degrees. The reward is 0 when the torso is
+        exactly upside-down and 1 when the torso's z-axis is less than
+        `deviation_angle` away from the global z-axis.
+    """
+    deviation = np.cos(np.deg2rad(deviation_angle))
+    upright_torso = physics.bind(walker.root_body).xmat[-1]
+    # if hasattr(walker, 'pelvis_body'):
+    upright_pelvis = physics.bind(walker.pelvis_body).xmat[-1]
+    upright_zz = np.stack([upright_torso, upright_pelvis])
+    # else:
+    #     upright_zz = upright_torso
+    upright = rewards.tolerance(upright_zz,
+                                bounds=(deviation, float('inf')),
+                                sigmoid='linear',
+                                margin=1 + deviation,
+                                value_at_margin=0)
+    return np.min(upright)

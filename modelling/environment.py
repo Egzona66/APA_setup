@@ -21,7 +21,7 @@ def build_environment(random_state=None):
 
     # Build a position-controlled rodent walker.
     walker = rodent.Rat(
-        observable_options={'egocentric_camera': dict(enabled=False)})
+        observable_options={'egocentric_camera': dict(enabled=True)})
 
     # build forceplate arena
     arena = Forceplate()
@@ -38,7 +38,8 @@ def build_environment(random_state=None):
         physics_timestep=_PHYSICS_TIMESTEP,
         control_timestep=_CONTROL_TIMESTEP)
 
-    return composer.Environment(time_limit=5,
+    return composer.Environment(
+                                time_limit=5,
                                 task=task,
                                 random_state=random_state,
                                 strip_singleton_obs_buffer_dim=True)
@@ -48,7 +49,14 @@ def build_environment(random_state=None):
 
 
 def flatten_obs(obs, valid_keys):
-    return np.hstack(list({k:v for k, v in obs.items() if k in valid_keys}.values())).astype(np.float32)
+    # return np.hstack(list({k:v for k, v in obs.items() if k in valid_keys}.values())).astype(np.float32)
+    # return {k:v for k, v in obs.items() if k in valid_keys}
+
+    camera = obs['walker/egocentric_camera']
+    proprioceptive = np.hstack(
+                [v for k,v in obs.items() if k in valid_keys and k != "walker/egocentric_camera"]
+                ).astype(np.float32)
+    return {'camera': camera, 'proprioceptive': proprioceptive}
 
 
 class RLEnvironment(gym.Env):
@@ -63,7 +71,18 @@ class RLEnvironment(gym.Env):
     def __init__(self,):
         self.env = build_environment()
 
-        self.observation_space, self.obs_keys = convert_dm_control_to_gym_space(self.env.observation_spec())
+        _observation_space, self.obs_keys = convert_dm_control_to_gym_space(self.env.observation_spec())
+
+        # put proprioceptive observations together
+        camera = _observation_space['walker/egocentric_camera']
+        n_proprioceptive = np.sum([v.shape[0] for k,v in _observation_space.items() if k != "walker/egocentric_camera"])
+        proprioceptive = spaces.Box(
+            low=np.full((n_proprioceptive,), -np.inf),
+            high=np.full((n_proprioceptive,), np.inf),
+            shape=(n_proprioceptive, ),
+            dtype=np.float32
+        )
+        self.observation_space = spaces.Dict({"camera": camera, "proprioceptive": proprioceptive})
         self.action_space = convert_dm_control_to_gym_space(self.env.action_spec(), settype=np.float32)
 
 
@@ -94,8 +113,9 @@ class RLEnvironment(gym.Env):
 def convert_dm_control_to_gym_space(dm_control_space, settype=None):
     r"""Convert dm_control space to gym space. """
     if isinstance(dm_control_space, specs.BoundedArray):
-        space = spaces.Box(low=dm_control_space.minimum, 
-                           high=dm_control_space.maximum, 
+        space = spaces.Box(low=np.full(dm_control_space.shape, dm_control_space.minimum), 
+                           high=np.full(dm_control_space.shape, dm_control_space.maximum), 
+                           shape=dm_control_space.shape, 
                            dtype=settype or dm_control_space.dtype)
         assert space.shape == dm_control_space.shape
         return space
@@ -109,18 +129,19 @@ def convert_dm_control_to_gym_space(dm_control_space, settype=None):
         return space
     elif isinstance(dm_control_space, dict):
         vals = [convert_dm_control_to_gym_space(v, settype=settype) for v in dm_control_space.values()]
-        # space = spaces.Dict({k: v for k,v in zip(dm_control_space.keys(), vals) if v is not None})
+        space = spaces.Dict({k: v for k,v in zip(dm_control_space.keys(), vals) if v is not None})
+        return space, list(space.keys())
 
-        # turn all the values into a spaces.Box
-        LOW = []
-        HIGH = []
-        ndim = 0
-        valid_keys = []
-        for k, val in zip(dm_control_space.keys(), vals):
-            if val is None: continue
-            valid_keys.append(k)
-            LOW.extend(list(val.low))
-            HIGH.extend(list(val.high))
-            ndim += val.shape[0]
+        # # turn all the values into a spaces.Box
+        # LOW = []
+        # HIGH = []
+        # ndim = 0
+        # valid_keys = []
+        # for k, val in zip(dm_control_space.keys(), vals):
+        #     if val is None: continue
+        #     valid_keys.append(k)
+        #     LOW.extend(list(val.low))
+        #     HIGH.extend(list(val.high))
+        #     ndim += val.shape[0]
 
-        return spaces.Box(low=np.array(LOW), high=np.array(HIGH), shape=(ndim,), dtype=np.float32), valid_keys
+        # return spaces.Box(low=np.array(LOW), high=np.array(HIGH), shape=(ndim,), dtype=np.float32), valid_keys
