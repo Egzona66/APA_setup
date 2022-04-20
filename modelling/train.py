@@ -50,15 +50,15 @@ def make_env(rank, seed=0, log_dir=None):
 
 
 def make_agent(env, tensorboard_log=None):
-    # policy_kwargs = dict(
-    #     features_extractor_class=ProprioceptiveEncoder,
-    #     features_extractor_kwargs=dict(features_dim=8),
-    # )
+    policy_kwargs = dict(
+        features_extractor_class=ProprioceptiveEncoder,
+        features_extractor_kwargs=dict(features_dim=16),
+    )
 
-    policy_kwargs = dict(activation_fn=th.nn.Tanh,
-                        net_arch=[dict(pi=[256, 256], vf=[256, 256])])
+    # policy_kwargs = dict(activation_fn=th.nn.Tanh,
+    #                     net_arch=[dict(pi=[256, 256], vf=[256, 256])])
 
-    model = A2C('MlpPolicy', env, policy_kwargs=policy_kwargs, verbose=1)
+    model = A2C('MlpPolicy', env, policy_kwargs=policy_kwargs, verbose=1, tensorboard_log=tensorboard_log,)
 
     # model = RecurrentPPO(
     #         "MlpLstmPolicy",
@@ -78,7 +78,7 @@ def make_agent(env, tensorboard_log=None):
 if __name__ == '__main__':
     TRAIN = True
     N_CPU = 10
-    N_STEPS = 20_000
+    N_STEPS = 800_000
 
     # TODO create input network to compress inputs
 
@@ -86,8 +86,8 @@ if __name__ == '__main__':
     os.makedirs(log_dir, exist_ok=True)
 
     if TRAIN:
-        checkpoint_callback = CheckpointCallback(save_freq=2500, save_path=log_dir,
-                                         name_prefix='rl_model')
+        checkpoint_callback = CheckpointCallback(save_freq=5000, save_path=log_dir,
+                                         name_prefix="rl_model")
 
         # Create the vectorized environment
         if N_CPU > 1:

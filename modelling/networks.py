@@ -26,11 +26,11 @@ class ProprioceptiveEncoder(BaseFeaturesExtractor):
         n_input_channels = observation_space.shape[0]
         self.cnn = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(n_input_channels, 64),
+            nn.Linear(n_input_channels, 256),
             nn.ReLU(),
-            nn.Linear(64, 32),
+            nn.Linear(256, 128),
             nn.Tanh(),
-            nn.Linear(32, features_dim)
+            nn.Linear(128, features_dim)
         )
 
         # Compute shape by doing one forward pass
