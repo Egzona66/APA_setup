@@ -6,6 +6,8 @@ from gym import spaces
 from dm_env import specs
 from dm_control import composer
 from dm_control.locomotion.walkers import rodent
+from dm_control import mjcf
+from dm_control.rl.control import Environment as RLEnv
 
 from modelling.corridor import Forceplate
 from modelling.task import RunThroughCorridor
@@ -21,22 +23,31 @@ def build_environment(random_state=None):
 
     # Build a position-controlled rodent walker.
     walker = rodent.Rat(
-        observable_options={'egocentric_camera': dict(enabled=True)})
+        observable_options={'egocentric_camera': dict(enabled=False)})
 
     # build forceplate arena
-    arena = Forceplate()
+    arena = Forceplate(
+            corridor_width=.4,
+            corridor_length=5,
+    )
 
     # Build a task that rewards the agent for running down the corridor at a
     # specific velocity.
     task = RunThroughCorridor(
         walker=walker,
         arena=arena,
-        walker_spawn_position=(.2, 0, 0),
+        walker_spawn_position=(2, 0, 0),
         walker_spawn_rotation=0,
         contact_termination=False,
-        terminate_at_height=-0.3,
+        terminate_at_height=0.03,
         physics_timestep=_PHYSICS_TIMESTEP,
         control_timestep=_CONTROL_TIMESTEP)
+
+    # get physics
+    _physics = mjcf.Physics.from_mjcf_model(
+            task.root_entity.mjcf_model)
+
+    # return RLEnv(_physics, task)
 
     return composer.Environment(
                                 time_limit=5,
@@ -52,11 +63,15 @@ def flatten_obs(obs, valid_keys):
     # return np.hstack(list({k:v for k, v in obs.items() if k in valid_keys}.values())).astype(np.float32)
     # return {k:v for k, v in obs.items() if k in valid_keys}
 
-    camera = obs['walker/egocentric_camera']
     proprioceptive = np.hstack(
                 [v for k,v in obs.items() if k in valid_keys and k != "walker/egocentric_camera"]
                 ).astype(np.float32)
-    return {'camera': camera, 'proprioceptive': proprioceptive}
+
+    if 'walker/egocentric_camera' in obs.keys():
+        camera = obs['walker/egocentric_camera']
+        return {'camera': camera, 'proprioceptive': proprioceptive}
+    else:
+        return proprioceptive
 
 
 class RLEnvironment(gym.Env):
@@ -74,7 +89,6 @@ class RLEnvironment(gym.Env):
         _observation_space, self.obs_keys = convert_dm_control_to_gym_space(self.env.observation_spec())
 
         # put proprioceptive observations together
-        camera = _observation_space['walker/egocentric_camera']
         n_proprioceptive = np.sum([v.shape[0] for k,v in _observation_space.items() if k != "walker/egocentric_camera"])
         proprioceptive = spaces.Box(
             low=np.full((n_proprioceptive,), -np.inf),
@@ -82,7 +96,12 @@ class RLEnvironment(gym.Env):
             shape=(n_proprioceptive, ),
             dtype=np.float32
         )
-        self.observation_space = spaces.Dict({"camera": camera, "proprioceptive": proprioceptive})
+        if 'walker/egocentric_camera' in _observation_space.keys():
+            camera = _observation_space['walker/egocentric_camera']
+            self.observation_space = spaces.Dict({"camera": camera, "proprioceptive": proprioceptive})
+        else:
+            self.observation_space = proprioceptive
+
         self.action_space = convert_dm_control_to_gym_space(self.env.action_spec(), settype=np.float32)
 
 
@@ -91,6 +110,8 @@ class RLEnvironment(gym.Env):
 
  
     def step(self, action):
+        if isinstance(action, tuple):
+            action = action[0].ravel()
         timestep = self.env.step(action)
         observation = flatten_obs(timestep.observation, self.obs_keys)
         reward = timestep.reward
@@ -102,7 +123,7 @@ class RLEnvironment(gym.Env):
         timestep = self.env.reset()
         return flatten_obs(timestep.observation, self.obs_keys)
 
-    def render(self, mode='rgb_array', height=None, width=None, camera_id=0):
+    def render(self, mode='rgb_array', height=480, width=480, camera_id=0):
         '''Returns RGB frames from a camera.'''
         assert mode == 'rgb_array'
         return self.env.physics.render(
@@ -113,10 +134,13 @@ class RLEnvironment(gym.Env):
 def convert_dm_control_to_gym_space(dm_control_space, settype=None):
     r"""Convert dm_control space to gym space. """
     if isinstance(dm_control_space, specs.BoundedArray):
+        dtype = settype if settype is not None else dm_control_space.dtype
+        dtype = dm_control_space.dtype if dm_control_space.dtype == np.uint8 else dtype
+
         space = spaces.Box(low=np.full(dm_control_space.shape, dm_control_space.minimum), 
                            high=np.full(dm_control_space.shape, dm_control_space.maximum), 
                            shape=dm_control_space.shape, 
-                           dtype=settype or dm_control_space.dtype)
+                           dtype=dtype)
         assert space.shape == dm_control_space.shape
         return space
     elif isinstance(dm_control_space, specs.Array) and not isinstance(dm_control_space, specs.BoundedArray):

@@ -1,6 +1,7 @@
 import gym
 import torch as th
 import torch.nn as nn
+from loguru import logger
 
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 
@@ -58,6 +59,7 @@ class VisualProprioceptionCombinedExtractor(BaseFeaturesExtractor):
 
         # Update the features dim manually
         self._features_dim = total_concat_size
+        logger.info(f"created custom features extract. N features: {self._features_dim}")
 
     def forward(self, observations) -> th.Tensor:
         encoded_tensor_list = []
@@ -67,6 +69,40 @@ class VisualProprioceptionCombinedExtractor(BaseFeaturesExtractor):
             encoded_tensor_list.append(extractor(observations[key]))
         # Return a (B, self._features_dim) PyTorch tensor, where B is batch dimension.
         return th.cat(encoded_tensor_list, dim=1)
+
+
+
+class ProprioceptiveFeaturesExtractor(BaseFeaturesExtractor):
+    """
+    :param observation_space: (gym.Space)
+    :param features_dim: (int) Number of features extracted.
+        This corresponds to the number of unit for the last layer.
+    """
+
+    def __init__(self, observation_space: gym.spaces.Box, features_dim: int = 16):
+        super(ProprioceptiveFeaturesExtractor, self).__init__(observation_space, features_dim)
+       
+        self.mlp = nn.Sequential(
+            nn.Linear(observation_space.shape[0], 256),
+            nn.ReLU(),
+            # nn.Linear(256, 256),
+            # nn.ReLU(),
+            nn.Linear(256, 256),
+            nn.ReLU(),
+            nn.Linear(256, features_dim),
+            nn.ReLU(),
+        )
+
+        # Compute shape by doing one forward pass
+        with th.no_grad():
+            n_flatten = self.mlp(
+                th.as_tensor(observation_space.sample()[None]).float()
+            ).shape[1]
+
+        self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
+
+    def forward(self, observations: th.Tensor) -> th.Tensor:
+        return self.linear(self.mlp(observations))
 
 
 
@@ -95,18 +131,27 @@ class CustomNetwork(nn.Module):
 
         # Policy network
         self.policy_net = nn.Sequential(
-            nn.Linear(feature_dim, 256),
+            nn.Linear(feature_dim, 512),
             nn.Tanh(),
-            nn.Linear(256, last_layer_dim_pi),
+            nn.Linear(512, 512),
+            nn.Tanh(),
+            nn.Linear(512, 512),
+            nn.Tanh(),
+            nn.Linear(512, last_layer_dim_pi),
             nn.Tanh()
         )
         # Value network
         self.value_net = nn.Sequential(
-            nn.Linear(feature_dim, 256),
+            nn.Linear(feature_dim, 512),
             nn.Tanh(),
-            nn.Linear(256, last_layer_dim_vf),
+            nn.Linear(512, 512),
+            nn.Tanh(),
+            nn.Linear(512, 512),
+            nn.Tanh(),
+            nn.Linear(512, last_layer_dim_vf),
             nn.Tanh()
         )
+        logger.info("Created custom policy and value nets")
 
     def forward(self, features: th.Tensor) -> Tuple[th.Tensor, th.Tensor]:
         """
@@ -150,46 +195,3 @@ class CustomActorCriticPolicy(ActorCriticPolicy):
     def _build_mlp_extractor(self) -> None:
         self.mlp_extractor = CustomNetwork(self.features_dim)
 
-
-
-class ProprioceptiveEncoder(BaseFeaturesExtractor):
-    """
-    A multi-layer perceptron NN for proprioceptive observations (e.g. joint angles)
-    representation.
-
-    See: https://stable-baselines3.readthedocs.io/en/master/guide/custom_policy.html
-    And: https://github.com/christianversloot/machine-learning-articles/blob/main/creating-a-multilayer-perceptron-with-pytorch-and-lightning.md
-
-    :param observation_space: (gym.Space)
-    :param features_dim: (int) Number of features extracted.
-        This corresponds to the number of unit for the last layer.
-    """
-
-    def __init__(self, observation_space: gym.spaces.Box, features_dim: int = 256):
-        super(ProprioceptiveEncoder, self).__init__(observation_space, features_dim)
-
-        # We assume CxHxW images (channels first)
-
-        n_input_channels = observation_space.shape[0]
-        self.cnn = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(n_input_channels, 256),
-            nn.ReLU(),
-            nn.Linear(256, 128),
-            nn.Tanh(),
-            nn.Linear(128, features_dim)
-        )
-
-        # Compute shape by doing one forward pass
-        with th.no_grad():
-            n_flatten = self.cnn(
-                th.as_tensor(observation_space.sample()[None]).float()
-            ).shape[1]
-
-        self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.Tanh())
-
-    def forward(self, observations: th.Tensor) -> th.Tensor:
-        return self.linear(self.cnn(observations))
-
-
-    

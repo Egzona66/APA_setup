@@ -1,11 +1,11 @@
 from dm_control.locomotion.arenas.corridors import Corridor
-
+from dm_control.composer import variation
 
 _SIDE_WALLS_GEOM_GROUP = 3
-_CORRIDOR_X_PADDING = 0.0
+_CORRIDOR_X_PADDING = .2
 _WALL_THICKNESS = 0.16
-_SIDE_WALL_HEIGHT = 4.0
-_DEFAULT_ALPHA = 0.5
+_SIDE_WALL_HEIGHT = .5
+_DEFAULT_ALPHA = 0.9
 
 
 class Forceplate(Corridor):
@@ -16,7 +16,7 @@ class Forceplate(Corridor):
 
     def _build(self,
                 corridor_width=.4,
-                corridor_length=10,
+                corridor_length=5,
                 visible_side_planes=True,
                 name='empty_corridor'):
         """Builds the corridor.
@@ -44,7 +44,7 @@ class Forceplate(Corridor):
             ambient=[0.4, 0.4, 0.4], diffuse=[0.8, 0.8, 0.8],
             specular=[0.1, 0.1, 0.1])
 
-        alpha = _DEFAULT_ALPHA if visible_side_planes else 0.0
+        alpha = _DEFAULT_ALPHA if visible_side_planes else 0.2
         self._ground_plane = self._mjcf_root.worldbody.add(
             'geom', type='plane', rgba=[0.1, 0.1, 0.1, 1], size=[1, 1, 1])
 
@@ -76,8 +76,10 @@ class Forceplate(Corridor):
             `Variation` objects.
         """
         self._walls_body.geom.clear()
-        corridor_width = self._corridor_width
-        corridor_length = self._corridor_length
+        corridor_width = variation.evaluate(self._corridor_width,
+                                            random_state=random_state)
+        corridor_length = variation.evaluate(self._corridor_length,
+                                            random_state=random_state)
         self._current_corridor_length = corridor_length
         self._current_corridor_width = corridor_width
 

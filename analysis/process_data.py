@@ -286,10 +286,11 @@ class DataProcessing:
             self.data["strain"].append(trial.Strain)
 
             self.data["movement_onset_frame"].append(start_frame)
-            self.data["video"].append(trial["video"])
+            self.data["video"].append(trial["Video"])
 
         self.data = pd.DataFrame(self.data)
-        logger.info(f"Excluded {len(excluded)} trials: {excluded}")
+        logger.info(f"\nExcluded {len(excluded)} trials: {excluded}")
+        print(self.data.groupby("condition").count()['name'])
         self.wrapup()
 
     def wrapup(self):

@@ -12,7 +12,7 @@ class RunThroughCorridor(composer.Task):
     def __init__(self,
                 walker,
                 arena,
-                walker_spawn_position=(0, 0, 0),
+                walker_spawn_position=(.5, 0, 0),
                 walker_spawn_rotation=None,
                 contact_termination=True,
                 terminate_at_height=-0.5,
@@ -51,7 +51,7 @@ class RunThroughCorridor(composer.Task):
         enabled_observables += self._walker.observables.kinematic_sensors
         enabled_observables += self._walker.observables.dynamic_sensors
         enabled_observables.append(self._walker.observables.sensors_touch)
-        enabled_observables.append(self._walker.observables.egocentric_camera)
+        # enabled_observables.append(self._walker.observables.egocentric_camera)
         for observable in enabled_observables:
             observable.enabled = True
 
@@ -61,7 +61,10 @@ class RunThroughCorridor(composer.Task):
         self.set_timesteps(
             physics_timestep=physics_timestep, control_timestep=control_timestep)
 
-        self.__ntsteps = 0
+        self._lhand_body = walker.mjcf_model.find('body', 'hand_L')
+        self._rhand_body = walker.mjcf_model.find('body', 'hand_R')
+        self._head_body = walker.head
+        self._prev_action = None
 
     @property
     def root_entity(self):
@@ -74,10 +77,10 @@ class RunThroughCorridor(composer.Task):
 
     def initialize_episode(self, physics, random_state):
         self._walker.reinitialize_pose(physics, random_state)
-        self.__ntsteps = 0
 
         self._failure_termination = False
         walker_foot_geoms = set(self._walker.ground_contact_geoms)
+
         walker_nonfoot_geoms = [
             geom for geom in self._walker.mjcf_model.find_all('geom')
             if geom not in walker_foot_geoms]
@@ -98,14 +101,16 @@ class RunThroughCorridor(composer.Task):
 
     def after_step(self, physics, random_state):
         self._failure_termination = False
-        if self._contact_termination:
-            for c in physics.data.contact:
-                if self._is_disallowed_contact(c):
-                    self._failure_termination = True
-                    break
+        # if self._contact_termination:
+        #     for c in physics.data.contact:
+        #         if self._is_disallowed_contact(c):
+        #             self._failure_termination = True
+        #             break
+
         if self._terminate_at_height is not None:
-            if any(physics.bind(self._walker.end_effectors).xpos[:, -1] <
-                    self._terminate_at_height):
+            # if any(physics.bind(self._walker.end_effectors).xpos[:, -1] <
+            #         self._terminate_at_height):
+            if self._walker.observables.body_height(physics) < self._terminate_at_height:
                 self._failure_termination = True
         
     def should_terminate_episode(self, physics):
@@ -118,11 +123,42 @@ class RunThroughCorridor(composer.Task):
             return 1.
 
     def get_reward(self, physics):
-        # return _actuators_activation(physics, self._walker)
-        # return _upright_reward(physics, self._walker, deviation_angle=30)
-        return _speed_reward(physics, self._walker)
+        
+        act = physics.data.act
+        if self._prev_action is None:
+            act_rew = np.linalg.norm(act)
+        else:
+            act_rew = np.linalg.norm(act - self._prev_action)
+            self._prev_action = act
+
+        up =  _upright_reward(physics, self._walker, deviation_angle=5)
+        time = physics.data.time
+        speed = _speed_reward(physics, self._walker)
+        speed = speed if speed > .5 else (0 if speed > 0 else -1)
+        return 5 * speed + up + .01 * time + 0.000001 * act_rew
+        
+
+        # return rew
+
+        # actuators = _actuators_activation(physics, self._walker)
+        # up =  _upright_reward(physics, self._walker, deviation_angle=5)
+        # speed = _speed_reward(physics, self._walker)
+        # height = _body_height_reward(physics, self._walker)
+        
+        # l_hand_height = self._lhand_body.pos[2]
+        # r_hand_height = self._rhand_body.pos[2]
+        
+        # body_height = self._walker.observables.body_height(physics)
+
+        # if l_hand_height > body_height or r_hand_height > body_height:
+        #     return -1
+        # else:
+        #     return 1
 
 
+def _body_height_reward(physics, walker):
+    return walker.observables.body_height(physics)
+    
 def _speed_reward(physics, walker):
     walker_xvel = physics.bind(walker.root_body).subtree_linvel[0]
     xvel_term = rewards.tolerance(

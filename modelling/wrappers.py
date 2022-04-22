@@ -44,7 +44,7 @@ class GrayScaleObservation(gym.ObservationWrapper):
 
         # permute [H, W, C] array to [C, H, W] tensor
         camera = np.transpose(camera, (2, 0, 1))
-        camera = torch.tensor(camera.copy(), dtype=torch.float)
+        camera = torch.tensor(camera.copy(), dtype=torch.uint8)
 
         observation['camera'] = camera
         return observation
