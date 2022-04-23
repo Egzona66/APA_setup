@@ -4,29 +4,27 @@ import sys
 sys.path.append("./")
 
 from pathlib import Path
-import matplotlib.pyplot as plt
 import os
 import numpy as np
 import json
+import glob
 import cv2
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-from stable_baselines3 import A2C, DDPG
-from sb3_contrib.ppo_recurrent.ppo_recurrent import RecurrentPPO
+from stable_baselines3 import A2C, DDPG, TD3
 
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecFrameStack, VecTransposeImage, VecVideoRecorder
 from stable_baselines3.common.utils import set_random_seed
-from stable_baselines3.common.callbacks import CheckpointCallback
+from stable_baselines3.common.callbacks import CheckpointCallback, CallbackList, EveryNTimesteps, BaseCallback
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.noise import NormalActionNoise
 import torch as th
-from rich.progress import track
 
-from modelling.utils import grab_frames, setup_video
+from modelling.utils import make_video
 from modelling.environment import RLEnvironment
 from modelling.networks import VisualProprioceptionCombinedExtractor, CustomActorCriticPolicy, ProprioceptiveFeaturesExtractor
 from modelling.wrappers import SkipFrame, GrayScaleObservation, FrameStack
@@ -59,22 +57,25 @@ def make_env(rank, seed=0, log_dir=None):
     return _init 
 
 
+def make_agent(env, tensorboard_log=None, params=dict(), policy_kwargs=dict(), action_noise_kwargs=None):
+    if action_noise_kwargs is not None:
+        n_actions = env.action_space.shape[-1]
+        action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=action_noise_kwargs["noise_std"] * np.ones(n_actions))
+    else:
+        action_noise = None
 
-def make_agent(env, tensorboard_log=None, params=dict()):
-    # n_actions = env.action_space.shape[-1]
-    # action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions))
-
-
-
-    policy_kwargs = dict(
-        # features_extractor_class=VisualProprioceptionCombinedExtractor,
-        features_extractor_class=ProprioceptiveFeaturesExtractor,
-        features_extractor_kwargs=dict(features_dim=32),
-        net_arch=[512, 512, 512]
+    model = TD3(
+                # CustomActorCriticPolicy,  # 'MultiInputPolicy', 
+                'MlpPolicy',
+                env,   
+                policy_kwargs=policy_kwargs, 
+                tensorboard_log=tensorboard_log,
+                action_noise=action_noise,
+                **params,
     )
 
     # model = DDPG(
-    #     "MultiInputPolicy",
+    #     "MlpPolicy",
     #     env,
     #     policy_kwargs=policy_kwargs,
     #     tensorboard_log=tensorboard_log,
@@ -83,14 +84,14 @@ def make_agent(env, tensorboard_log=None, params=dict()):
     # )
 
 
-    model = A2C(
-                # CustomActorCriticPolicy,  # 'MultiInputPolicy', 
-                'MlpPolicy',
-                env,   
-                policy_kwargs=policy_kwargs, 
-                tensorboard_log=tensorboard_log,
-                **params,
-    )
+    # model = A2C(
+    #             CustomActorCriticPolicy,  # 'MultiInputPolicy', 
+    #             # 'MlpPolicy',
+    #             env,   
+    #             policy_kwargs=policy_kwargs, 
+    #             tensorboard_log=tensorboard_log,
+    #             **params,
+    # )
 
     # model = RecurrentPPO(
     #         "MlpLstmPolicy",
@@ -102,8 +103,42 @@ def make_agent(env, tensorboard_log=None, params=dict()):
     return model
 
 
+class SaveVideoCallback(BaseCallback):
+    """
+    Callback for saving a model (the check is done every ``check_freq`` steps)
+    based on the training reward (in practice, we recommend using ``EvalCallback``).
 
-# TODO check if env.reset is broken
+    :param check_freq:
+    :param log_dir: Path to the folder where the model will be saved.
+      It must contains the file created by the ``Monitor`` wrapper.
+    :param verbose: Verbosity level.
+    """
+    def __init__(self, save_freq: int, log_dir: str, verbose: int = 1):
+        super(SaveVideoCallback, self).__init__(verbose)
+        self.save_freq = save_freq
+        self.log_dir = log_dir
+        self.save_path = os.path.join(log_dir, 'videos')
+
+
+    def _init_callback(self) -> None:
+        # Create folder if needed
+        if self.save_path is not None:
+            os.makedirs(self.save_path, exist_ok=True)
+
+    def _on_step(self) -> bool:
+        if self.n_calls % self.save_freq == 0:
+            # get last .zip file in log_dir
+            files = glob.glob(os.path.join(self.log_dir, '*.zip'))
+            if not files:
+                return True
+
+            _file = files[-1]
+            n_iter = Path(_file).stem
+
+            make_video(self.model, self.model.get_env(), os.path.join(self.save_path, f"{n_iter}.mp4"), video_length=150)
+            
+
+        return True
 
 
 a2c_params = dict(
@@ -123,27 +158,41 @@ a2c_params = dict(
                 verbose=1, 
     )
 
-ddpo_params = dict(
+td3_params = dict(
     learning_rate = 1e-3,
     gamma = 0.99,
     learning_starts = 10000,
-    # noise_type = 'normal',
-    # noise_std = 0.1,
     verbose=1,
     device = "auto",
 )
 
-# TODO try TD3 & PPO
-# TODO try with action noise
+# TODO try TD3 with combinations of nets - try with camera
+# TODO try different reward structures
 
 if __name__ == '__main__':
-    NAME = "newstart"
-    N_CPU = 2
-    N_STEPS = 800_000
+    # ---------------------------------- params ---------------------------------- #
+    NAME = "TD3_large_net_relu"
+    N_CPU = 1
+    N_STEPS = 100_000
     SEED = 0
 
-    PARAMS = a2c_params
+    PARAMS = td3_params
 
+    policy_kwargs = dict(
+        # features_extractor_class=VisualProprioceptionCombinedExtractor,
+        # features_extractor_class=ProprioceptiveFeaturesExtractor,
+        # features_extractor_kwargs=dict(features_dim=16),
+        net_arch=[512, 512, 512, 512],
+        activation_fn=th.nn.ReLU
+    )
+
+    action_noise_kwargs = dict(
+        use_action_noise=True,
+        noise_type="normal",
+        noise_std=0.1
+    )
+
+    # -------------------------------- store logs -------------------------------- #
     log_dir = Path(f"./logs/{NAME}")
     log_dir.mkdir(exist_ok=True)
 
@@ -154,54 +203,23 @@ if __name__ == '__main__':
 
     # save params to json
     with open(os.path.join(log_dir, 'data.json'), 'w') as fp:
-        prms = {**PARAMS, **dict(ncpu=N_CPU, nsteps=N_STEPS, seed=SEED)}
+        prms = {**PARAMS, **dict(ncpu=N_CPU, nsteps=N_STEPS, seed=SEED), **{k:str(v) for k,v in policy_kwargs.items()}, **action_noise_kwargs}
         json.dump(prms, fp, indent=4)
 
-    # Create the vectorized environment
+    # -------------------------------- create env -------------------------------- #
     if N_CPU > 1:
         env = DummyVecEnv([make_env(i, log_dir=log_dir, seed=SEED) for i in range(N_CPU)])  # or SubprocVecEnv/DummyVecEnv
     else:
         env = make_env(1, seed=SEED)()
         check_env(env)
     
+    # ------------------------------- model & train ------------------------------ #
     model = make_agent(env, tensorboard_log=log_dir, params=PARAMS)
-    checkpoint_callback = CheckpointCallback(save_freq=2500, save_path=log_dir,
-                                    name_prefix=NAME)
-    model.learn(total_timesteps=N_STEPS, callback=checkpoint_callback, log_interval=10)
+    checkpoint_callback = CheckpointCallback(save_freq=2500, save_path=log_dir,name_prefix=NAME)
+    video_callback = SaveVideoCallback(5000, log_dir)
+    model.learn(total_timesteps=N_STEPS, callback=CallbackList([checkpoint_callback, video_callback]), log_interval=10)
     model.save(f"trained_{NAME}")
 
     # make video
-    video_length = 100
     video_name = os.path.join(log_dir, f"video_{NAME}.mp4")
-    env = make_env(1, seed=SEED)()
-    _env = env.unwrapped.env
-    video = setup_video(video_name, _env)
-
-    # Record the video starting at the first step
-    obs = env.reset()
-    rew = 0.0
-    for i in track(range(video_length + 1), description="Recording video", total=video_length + 1):
-        frame = grab_frames(_env)
-
-        # add text to frame with reward value
-        frame = cv2.putText(frame, "rew: "+str(round(rew, 3)), (24, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-
-        # show frame
-        cv2.imshow("frame", frame)
-        cv2.waitKey(1)
-
-        video.write(frame)
-
-        # execute next action
-        action = env.action_space.sample()
-        try:
-            obs, rew, _, _ = env.step(action)
-        except:
-            print("Error in step")
-            break
-
-    # Save the video
-    video.release()
-    env.close()
-    print("Done & saved video at ", video_name)
-    plt.show()
+    make_video(model, env, video_name, video_length=150)

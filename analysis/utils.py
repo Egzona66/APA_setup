@@ -38,3 +38,4 @@ def compute_cog(sensors_data: dict) -> np.ndarray:
     CoM = np.sum(np.dstack(scaled_vectors.values()), 2)
 
     return CoM
+
