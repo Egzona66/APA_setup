@@ -50,7 +50,7 @@ def build_environment(random_state=None):
     # return RLEnv(_physics, task)
 
     return composer.Environment(
-                                time_limit=5,
+                                time_limit=2.5,
                                 task=task,
                                 random_state=random_state,
                                 strip_singleton_obs_buffer_dim=True)
@@ -137,11 +137,16 @@ def convert_dm_control_to_gym_space(dm_control_space, settype=None):
         dtype = settype if settype is not None else dm_control_space.dtype
         dtype = dm_control_space.dtype if dm_control_space.dtype == np.uint8 else dtype
 
-        space = spaces.Box(low=np.full(dm_control_space.shape, dm_control_space.minimum), 
-                           high=np.full(dm_control_space.shape, dm_control_space.maximum), 
-                           shape=dm_control_space.shape, 
+        if len(dm_control_space.shape) == 3:
+            _shape = dm_control_space.shape[:2]
+        else:
+            _shape = dm_control_space.shape
+
+        space = spaces.Box(low=np.full(_shape, dm_control_space.minimum), 
+                           high=np.full(_shape, dm_control_space.maximum), 
+                           shape=_shape, 
                            dtype=dtype)
-        assert space.shape == dm_control_space.shape
+        # assert space.shape == dm_control_space.shape
         return space
     elif isinstance(dm_control_space, specs.Array) and not isinstance(dm_control_space, specs.BoundedArray):
         if dm_control_space.shape == 0 or len(dm_control_space.shape) == 0 or dm_control_space.shape[0] == 0:

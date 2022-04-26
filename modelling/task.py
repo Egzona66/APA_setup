@@ -134,26 +134,11 @@ class RunThroughCorridor(composer.Task):
         up =  _upright_reward(physics, self._walker, deviation_angle=5)
         time = physics.data.time
         speed = _speed_reward(physics, self._walker)
+        # return .1 * act_rew
         speed = speed if speed > .5 else (0 if speed > 0 else -1)
-        return 5 * speed + up + .01 * time + 0.000001 * act_rew
+        return 5 * speed + up + .01 * time + 0.1 * act_rew
+        # return speed
         
-
-        # return rew
-
-        # actuators = _actuators_activation(physics, self._walker)
-        # up =  _upright_reward(physics, self._walker, deviation_angle=5)
-        # speed = _speed_reward(physics, self._walker)
-        # height = _body_height_reward(physics, self._walker)
-        
-        # l_hand_height = self._lhand_body.pos[2]
-        # r_hand_height = self._rhand_body.pos[2]
-        
-        # body_height = self._walker.observables.body_height(physics)
-
-        # if l_hand_height > body_height or r_hand_height > body_height:
-        #     return -1
-        # else:
-        #     return 1
 
 
 def _body_height_reward(physics, walker):

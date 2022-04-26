@@ -55,6 +55,10 @@ class GrayScaleObservation(gym.ObservationWrapper):
         camera = observation['camera']
         transform = T.Grayscale()
         camera = transform(camera)
+
+        # turn camera into numpy array
+        camera = camera.numpy()
+
         observation['camera'] = camera
         return observation
 

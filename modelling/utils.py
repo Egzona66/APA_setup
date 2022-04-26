@@ -37,10 +37,12 @@ def setup_video(video_name, env, fps=30):
 
 def make_video(model, env, video_name="video.mp4", video_length=150):
     # create cv2 named window
-    cv2.namedWindow("frame", cv2.WINDOW_NORMAL)
+    cv2.namedWindow(video_name, cv2.WINDOW_NORMAL)
 
     try:
-        _env = env.envs[0].env.env
+        _env = env.envs[-1].env
+        while _env.__class__.__name__ != "Environment":
+            _env = _env.env
     except:
         _env = env.unwrapped.env
     video = setup_video(video_name, _env)
@@ -53,11 +55,11 @@ def make_video(model, env, video_name="video.mp4", video_length=150):
         frame = grab_frames(_env)
 
         # add text to frame with reward value
-        rew = rew if isinstance(rew, float) else rew[0]
+        rew = rew if isinstance(rew, (float, int)) else rew[0]
         frame = cv2.putText(frame, "rew: "+str(round(rew, 3)), (24, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
 
         # show frame
-        cv2.imshow("frame", frame)
+        cv2.imshow(video_name, frame)
         cv2.waitKey(1)
 
         video.write(frame)
@@ -68,10 +70,13 @@ def make_video(model, env, video_name="video.mp4", video_length=150):
         try:
             obs, rew, _, _ = env.step(action)
         except:
-            logger.debug("Error in step during video creation")
+            # logger.debug("Error in step during video creation")
             break
 
     # Save the video
     video.release()
     env.close()
     logger.info("Done & saved")
+
+    # Close the window
+    cv2.destroyAllWindows()

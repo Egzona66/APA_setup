@@ -8,6 +8,7 @@ import os
 import numpy as np
 import json
 import glob
+from loguru import logger
 import cv2
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
@@ -43,10 +44,12 @@ def make_env(rank, seed=0, log_dir=None):
         env.seed(seed + rank)
         log_file = os.path.join(log_dir, str(rank)) if log_dir is not None else None
 
-        env = Monitor(env, log_file)
+        
 
         # env = SkipFrame(env, skip=4)
         # env = GrayScaleObservation(env)
+        env = Monitor(env, log_file)
+
         # env = VecVideoRecorder(env, log_dir,
         #                record_video_trigger=lambda x: x == 0, 
         #                video_length=100,
@@ -58,15 +61,14 @@ def make_env(rank, seed=0, log_dir=None):
 
 
 def make_agent(env, tensorboard_log=None, params=dict(), policy_kwargs=dict(), action_noise_kwargs=None):
-    if action_noise_kwargs is not None:
+    if action_noise_kwargs is not None and action_noise_kwargs['use_action_noise']:
         n_actions = env.action_space.shape[-1]
         action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=action_noise_kwargs["noise_std"] * np.ones(n_actions))
     else:
         action_noise = None
 
     model = TD3(
-                # CustomActorCriticPolicy,  # 'MultiInputPolicy', 
-                'MlpPolicy',
+                'MlpPolicy', # 'MultiInputPolicy', #'MlpPolicy',
                 env,   
                 policy_kwargs=policy_kwargs, 
                 tensorboard_log=tensorboard_log,
@@ -85,8 +87,7 @@ def make_agent(env, tensorboard_log=None, params=dict(), policy_kwargs=dict(), a
 
 
     # model = A2C(
-    #             CustomActorCriticPolicy,  # 'MultiInputPolicy', 
-    #             # 'MlpPolicy',
+    #             'MlpPolicy', #'MlpPolicy',
     #             env,   
     #             policy_kwargs=policy_kwargs, 
     #             tensorboard_log=tensorboard_log,
@@ -132,7 +133,12 @@ class SaveVideoCallback(BaseCallback):
             if not files:
                 return True
 
-            _file = files[-1]
+            logger.info(f"Found {len(files)} .zip files in {self.log_dir}")
+
+            steps = [int(Path(f).stem.split("_")[1]) for f in files]
+            idx = np.argmax(steps)
+
+            _file = sorted(files)[idx]
             n_iter = Path(_file).stem
 
             make_video(self.model, self.model.get_env(), os.path.join(self.save_path, f"{n_iter}.mp4"), video_length=150)
@@ -162,27 +168,30 @@ td3_params = dict(
     learning_rate = 1e-3,
     gamma = 0.99,
     learning_starts = 10000,
+    buffer_size= 200000,
+    train_freq = 1,
+    gradient_steps = 2,
+    batch_size= 256,
     verbose=1,
     device = "auto",
 )
 
-# TODO try TD3 with combinations of nets - try with camera
-# TODO try different reward structures
 
 if __name__ == '__main__':
     # ---------------------------------- params ---------------------------------- #
-    NAME = "TD3_large_net_relu"
+    NAME = "TD3-grad"
     N_CPU = 1
-    N_STEPS = 100_000
+    N_STEPS = 200_000
     SEED = 0
 
     PARAMS = td3_params
 
     policy_kwargs = dict(
         # features_extractor_class=VisualProprioceptionCombinedExtractor,
-        # features_extractor_class=ProprioceptiveFeaturesExtractor,
-        # features_extractor_kwargs=dict(features_dim=16),
-        net_arch=[512, 512, 512, 512],
+        features_extractor_class=ProprioceptiveFeaturesExtractor,
+        features_extractor_kwargs=dict(features_dim=64),
+        # net_arch=[512, 512],
+        net_arch=[64, 64],
         activation_fn=th.nn.ReLU
     )
 
@@ -211,7 +220,7 @@ if __name__ == '__main__':
         env = DummyVecEnv([make_env(i, log_dir=log_dir, seed=SEED) for i in range(N_CPU)])  # or SubprocVecEnv/DummyVecEnv
     else:
         env = make_env(1, seed=SEED)()
-        check_env(env)
+        # check_env(env)
     
     # ------------------------------- model & train ------------------------------ #
     model = make_agent(env, tensorboard_log=log_dir, params=PARAMS)
