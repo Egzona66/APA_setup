@@ -40,6 +40,7 @@ class DataProcessing:
         "on_sensors": [],
         "movement_onset_frame": [],
         "video": [],
+        "original_fps":[],
     }
 
     def __init__(self, reloading=False):
@@ -154,7 +155,7 @@ class DataProcessing:
         # get when mouse on each sensor
         paws_on_sensors = {
             f"{paw}_on_sensor": (sensors_data[paw] > self.on_sensor_weight_th).astype(
-                np.int
+                np.int64
             )
             for paw in sensors
         }
@@ -170,10 +171,10 @@ class DataProcessing:
         )
         sensors_data["weight_on_sensors"] = (
             sensors_data["tot_weight"] > self.on_all_sensors_weight_th
-        ).astype(np.int)
+        ).astype(np.int64)
         sensors_data["on_sensors"] = (
             sensors_data["weight_on_sensors"] & sensors_data["all_paws_on_sensors"]
-        ).astype(np.int)
+        ).astype(np.int64)
 
         return sensors_data
 
@@ -287,11 +288,13 @@ class DataProcessing:
 
             self.data["movement_onset_frame"].append(start_frame)
             self.data["video"].append(trial["Video"])
+            self.data["original_fps"].append(trial.fps)
 
         self.data = pd.DataFrame(self.data)
         logger.info(f"\nExcluded {len(excluded)} trials: {excluded}")
+        print("\n")
         print(self.data.groupby("condition").count()['name'])
-        print(self.data.groupby("condition").count()['name'])
+        print("\n")
 
         self.wrapup()
 
