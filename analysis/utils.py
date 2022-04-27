@@ -35,7 +35,7 @@ def compute_cog(sensors_data: dict) -> np.ndarray:
     }
 
     # sum the vectors to get the CoM vector
-    CoM = np.sum(np.dstack(scaled_vectors.values()), 2)
+    CoM = np.sum(np.dstack(list(scaled_vectors.values())), 2)
 
     return CoM
 

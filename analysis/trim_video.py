@@ -1,17 +1,39 @@
-from fcutils.video import trim_clip
 
 import sys
 sys.path.append("./")
+
+from pathlib import Path
+from fcutils.video import trim_clip
 from analysis.process_data import DataProcessing
 
-data = DataProcessing.reload()
-print(data[["name", "movement_onset_frame", "video"]])
+n_secs_before = .5
+n_secs_after = .5 
 
-# video = "path/to/video.mp4"
-# savepath  = "path/to/video_to_save.mp4"
+save_fld = Path("/Volumes/EGZONA/Egzona/Forceplate/DLC/clips")
 
-# FRAME = 2131123  # trial start frame
-# nframes_pre = 250
-# nframes_post = 250
+data = DataProcessing.reload().data
+print(data)
 
-# trim_clip(video, savepath, start=FRAME - nframes_pre, end=FRAME + nframes_post)
+for i, trial in data.iterrows():
+    if not trial.video.exists():
+        print(f"Could not find video for trial: {trial.video}")
+        continue
+
+    # get start frame in original FPS
+    frame = int(
+        trial.movement_onset_frame * trial.original_fps / 600
+    )
+
+    n_frames_before = int(n_secs_before * 600)
+    n_frames_after = int(n_secs_after * 600)
+
+    save_path = save_fld / f"{trial['name']}_{trial.movement_onset_frame}.mp4"
+    trim_clip(
+        str(trial.video),
+        save_path,
+        start_frame=frame - n_frames_before,
+        end_frame=frame + n_frames_after
+    )
+    print(f"Saved clip for trial: {trial.video}")
+
+

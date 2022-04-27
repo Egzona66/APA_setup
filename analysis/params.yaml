@@ -22,7 +22,7 @@ main_fld: "/Volumes/EGZONA/Egzona/Forceplate/2021"  # main data folder.
 fps: 600  # all trials are scaled in time to have this target FPS
 
 smoothing_window: 0.01  # in seconds - width of smoothing gaussian kernel
-on_sensor_weight_th: 0  # in % of mouse body weight: when > th weight the mouse is 'on' the sensor
+on_sensor_weight_th: 3  # in % of mouse body weight: when > th weight the mouse is 'on' the sensor
 on_all_sensors_weight_th: 70  # in % of body weight: when > th weight across all sensors the mouse is on sensors
 
 n_secs_before: 0.2  # number of seconds before start of trial to keep for plotting etc

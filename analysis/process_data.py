@@ -287,7 +287,7 @@ class DataProcessing:
             self.data["strain"].append(trial.Strain)
 
             self.data["movement_onset_frame"].append(start_frame)
-            self.data["video"].append(trial["Video"])
+            self.data["video"].append(self.main_fld / trial.subfolder / f"{trial.Video}_cam0.avi")
             self.data["original_fps"].append(trial.fps)
 
         self.data = pd.DataFrame(self.data)
