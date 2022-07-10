@@ -2,6 +2,7 @@ import sys
 import pandas as pd
 import numpy as np
 from loguru import logger
+from pathlib import Path
 
 sys.path.append("./")
 
@@ -13,8 +14,9 @@ USE_COG = "CoG_centered"  # or CoG_centered
 
 
 data = DataProcessing.reload()
-save_fld = data.main_fld.parent
-save_fld.mkdir(exist_ok=True)
+# save_fld = data.main_fld.parent
+# save_fld.mkdir(exist_ok=True)
+save_fld = Path(r"C:\Users\Federico\Desktop\forE")
 
 logger.info(f'Saving data to: {save_fld}')
 
@@ -35,5 +37,7 @@ averages['cog_y'] = cog[:, 1]
 averages['cog_std_x'] = cog[:, 0]
 averages['cog_std_y'] = cog[:, 1]
 
-pd.DataFrame(averages).to_csv(save_fld / 'saved_averages.csv')
+strain = "".join(data.params["STRAINS"])
+condition = "".join(data.params["CONDITIONS"])
+pd.DataFrame(averages).to_csv(save_fld / f'saved_averages_strain_{strain}_condition_{condition}.csv')
 

@@ -14,9 +14,9 @@ correct_for_paw: True  #  adjust all data to make it look like mice always step 
 
 
 # ----------------------------------- paths ---------------------------------- #
-frames_file: "/Volumes/Samsung_T5/DATA BACKUP/Egzona/Forceplate/240522_ALL_trials_2022_analysis.csv"  # CSV with trials start frames and metadata
-calibration_file: "/Volumes/Samsung_T5/DATA BACKUP/Egzona/Forceplate/forceplatesensors_calibration4.csv"  # CSV with volts/gr calibration data
-main_fld: "/Volumes/Samsung_T5/DATA BACKUP/Egzona/Forceplate/CURRENT ANALYSIS TRIALS"  # main data folder.
+frames_file: "F:\\Egzona\\Forceplate\\Old trial analysis files\\100422_ALLtrials_CTRL-DTR_conditions.csv"  # CSV with trials start frames and metadata
+calibration_file: "F:\\Egzona\\Forceplate\\forceplatesensors_calibration4.csv"  # CSV with volts/gr calibration data
+main_fld: "F:\\Egzona\\Forceplate\\CURRENT ANALYSIS TRIALS"  # main data folder.
 
 # --------------------------------- analysis --------------------------------- #
 fps: 600  # all trials are scaled in time to have this target FPS

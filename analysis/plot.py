@@ -126,4 +126,10 @@ for ch in sensors + ["tot_weight", "CoG"]:
         )
 
 
+# save figure
+strain = "".join(data.params["STRAINS"])
+condition = "".join(data.params["CONDITIONS"])
+main_f.savefig(f"C:\\Users\\Federico\\Desktop\\forE\\trial_traces_strain_{strain}_condition_{condition}.png", dpi=300)
+polar_f.savefig(f"C:\\Users\\Federico\\Desktop\\forE\\trial_traces_strain_polar_plot_{strain}_condition_{condition}.png", dpi=300)
+
 plt.show()

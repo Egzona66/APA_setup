@@ -85,13 +85,20 @@ class DataProcessing:
         # initialize and retrieve params used for previous processing
         processor = DataProcessing(reloading=True)
         params = from_yaml("./logs/params.yaml")
+        
 
         logger.debug(f"Setting previously stored params: {params}")
         processor.load_set_params(params)
+        processor.params = params
 
         # load data
         logger.info(f"Loading previously saved data from: {processor.data_savepath}")
-        processor.data = pd.read_hdf(processor.data_savepath, key="hdf")
+        data = pd.read_hdf(processor.data_savepath, key="hdf")
+        # filter by strain/condition
+        data = data.loc[data.condition.isin(params["CONDITIONS"])].reset_index(drop=True)
+        data = data.loc[data.strain.str.upper().isin(params["STRAINS"])].reset_index(drop=True)
+        
+        processor.data = data
         logger.info(f"Loaded {len(processor.data)} trials -----\n\n")
 
         return processor
@@ -294,6 +301,8 @@ class DataProcessing:
         logger.info(f"\nExcluded {len(excluded)} trials: {excluded}")
         print("\n")
         print(self.data.groupby("condition").count()['name'])
+        print("\n")
+        print(self.data.groupby("strain").count()['name'])
         print("\n")
 
         self.wrapup()
