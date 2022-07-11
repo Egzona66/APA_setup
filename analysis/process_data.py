@@ -41,6 +41,7 @@ class DataProcessing:
         "movement_onset_frame": [],
         "video": [],
         "original_fps":[],
+        "paw": [],
     }
 
     def __init__(self, reloading=False):
@@ -296,6 +297,7 @@ class DataProcessing:
             self.data["movement_onset_frame"].append(start_frame)
             self.data["video"].append(str(self.main_fld / trial.subfolder / f"{trial.Video}_cam0.avi"))
             self.data["original_fps"].append(trial.fps)
+            self.data["paw"].append(trial.Paw)
 
         self.data = pd.DataFrame(self.data)
         logger.info(f"\nExcluded {len(excluded)} trials: {excluded}")
