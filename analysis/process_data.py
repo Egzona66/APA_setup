@@ -291,8 +291,8 @@ class DataProcessing:
             # add CoG (including centered at the CoG of t=0)
             self.data["CoG"].append(utils.compute_cog(sensors_data))
             self.data["CoG_centered"].append(self.data["CoG"][-1] - self.data["CoG"][-1][start_frame - trial_start, :])
-            self.data["condition"].append(trial.Condition)
-            self.data["strain"].append(trial.Strain)
+            self.data["condition"].append(trial.Condition if "CTRL" not in trial.Condition else "WT")
+            self.data["strain"].append(trial.Strain.upper())
 
             self.data["movement_onset_frame"].append(start_frame)
             self.data["video"].append(str(self.main_fld / trial.subfolder / f"{trial.Video}_cam0.avi"))
