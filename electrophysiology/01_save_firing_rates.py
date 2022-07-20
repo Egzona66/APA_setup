@@ -90,7 +90,7 @@ def get_data(recording: str):
 
     if len(units):
         units = units.sort_values("brain_region", inplace=False).reset_index()
-        units = units.loc[units.brain_region.isin(("PRNr", "PRNc"))]
+        # units = units.loc[units.brain_region.isin(("PRNr", "PRNc"))]
     else:
         return None, None, None, None, None, None
         
@@ -144,7 +144,7 @@ for rec in get_recording_names("CUN/PPN"):
 
     # save units data
     for i, unit in units.iterrows():
-        name = f"{rec}_{unit.unit_id}.npy"
+        name = f"{rec}_{unit.unit_id}_{unit.brain_region}.npy"
         unit_save = cache / name
 
         # get firing rate
@@ -155,7 +155,11 @@ for rec in get_recording_names("CUN/PPN"):
             time[spikes_times] = 1
 
             fr = calc_firing_rate(time, dt=50)  
-            np.save(unit_save, fr)
+            try:
+                np.save(unit_save, fr)
+            except:
+                logger.warning(f"Could not save {unit_save}")
+                continue
         else:
             fr = np.load(unit_save)
 
