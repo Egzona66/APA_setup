@@ -6,10 +6,9 @@ from fcutils.maths import derivative
 from fcutils.maths.signals import get_onset_offset
 
 
-cache = Path(r"J:\APA")
 
 # --------------------------------- load data -------------------------------- #
-def load_rec_data(rec:str)->pd.DataFrame:
+def load_rec_data(cache, rec:str)->pd.DataFrame:
     """
         Load the units for a recording
     """
