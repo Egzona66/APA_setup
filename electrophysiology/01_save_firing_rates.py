@@ -144,6 +144,8 @@ for rec in get_recording_names("CUN/PPN"):
 
     # save units data
     for i, unit in units.iterrows():
+        if unit.brain_region not in ["PRNr", "PRNc"]:
+            continue
         name = f"{rec}_{unit.unit_id}_{unit.brain_region}.npy"
         unit_save = cache / name
 
