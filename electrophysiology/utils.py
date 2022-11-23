@@ -35,18 +35,34 @@ def find_starting_paw(tracking:pd.DataFrame, start:int) -> str:
     return starter
 
 
-def get_locomotion_onset_times(tracking: pd.DataFrame, paw:str="right_fl", cutoff=2000) -> list:
+def get_locomotion_onset_times(
+            tracking: pd.DataFrame, 
+            paw:str="right_fl", 
+            cutoff=2000,
+            movement_th = 9,
+    ) -> list:
     """
         Finds the precise timing of locomotion onsets from tracking data, looking
         specifically for the movement of the selected paw.
     """
 
-    is_moving = np.where(tracking.v > 9)[0]
-    moving = np.zeros_like(tracking.v)
-    moving[is_moving] = 1
+    # get when each of the paw is movign
+    def is_it_moving(v):
+        is_moving = np.where(tracking.v > movement_th)[0]
+        moving = np.zeros_like(tracking.v)
+        moving[is_moving] = 1
 
+    left_fl = is_it_moving(tracking.left_fl_v)
+    right_fl = is_it_moving(tracking.right_fl_v)
+    left_hl = is_it_moving(tracking.left_hl_v)
+    right_hl = is_it_moving(tracking.right_hl_v)
+    
+    # check how many paws are moving
+    moving = np.sum([left_fl, right_fl, left_hl, right_hl], axis=0)
+    moving[moving < 2] = 0
+    moving[moving >= 2] = 1
 
-
+    # get start/stop of movement
     move_start, _ = get_onset_offset(moving, .5)
     v = tracking.v.values
     d = derivative(v)
