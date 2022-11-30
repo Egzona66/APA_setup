@@ -15,6 +15,7 @@ sys.path.append("./")
 sys.path.append(r"C:\Users\Federico\Documents\GitHub\pysical_locomotion")
 
 from data.dbase.db_tables import (
+    TrackingBP,
     Probe,
     Unit,
     Recording,
@@ -25,30 +26,6 @@ from data.dbase._tracking import load_dlc_tracking, process_body_part
 
 cache = Path(r"J:\APA")
 
-
-def process_tracking_data(recording: str):
-    recfile = list(Path(r"K:\tracking").glob(f"{recording}*.h5"))[0]
-
-    if not Path(recfile).exists():
-        logger.warning(f"File {recfile} does not exist")
-        return None
-
-    body_parts_tracking: dict = load_dlc_tracking(recfile)
-    body_parts_tracking = {
-        k: v for k, v in body_parts_tracking.items() if k in ("body", "tail_base", "left_fl", "right_fl", "left_hl", "right_hl")
-    }
-
-    M = (CCM & f"name='{recording}'").fetch1("correction_matrix")
-    body_parts_tracking = {
-        k: process_body_part(
-            k, bp, M, likelihood_th=.95, cm_per_px=60/830
-        )
-        for k, bp in body_parts_tracking.items()
-    }
-    for k in body_parts_tracking.keys():
-        body_parts_tracking[k]['speed'] = body_parts_tracking[k]['bp_speed']
-        del body_parts_tracking[k]['bp_speed']
-    return body_parts_tracking
 
 
 def get_recording_names(region="MOs"):
@@ -66,17 +43,6 @@ def get_data(recording: str):
         Get all relevant data for a recording.
         Gets the ephys data and tracking data for all limbs
     """
-    body_parts_tracking = process_tracking_data(recording)
-    if body_parts_tracking is None:
-        return None, None, None, None, None, None
-
-    left_fl = pd.Series(body_parts_tracking["left_fl"])
-    right_fl = pd.Series(body_parts_tracking["right_fl"])
-    left_hl = pd.Series(body_parts_tracking["left_hl"])
-    right_hl = pd.Series(body_parts_tracking["right_hl"])
-    body = pd.Series(body_parts_tracking["body"])
-
-
     # get units
     recording = (Recording & f"name='{recording}'").fetch1()
     cf = recording["recording_probe_configuration"]
@@ -84,15 +50,29 @@ def get_data(recording: str):
         recording["name"],
         cf,
         spikes=True,
-        firing_rate=False,
-        frate_window=100,
+        firing_rate=True,
+        frate_window=250,
     )
 
-    if len(units):
-        units = units.sort_values("brain_region", inplace=False).reset_index()
-        # units = units.loc[units.brain_region.isin(("PRNr", "PRNc"))]
-    else:
+    print(units.head())
+    try:
+        units = units.loc[units.brain_region.isin(["PRNr", "PRNc"])]
+    except:
         return None, None, None, None, None, None
+    if not len(units):
+        return None, None, None, None, None, None
+
+
+    # get tracking
+    try:
+        left_fl =  pd.Series((TrackingBP & f'name="{recording}"' & "bpname='left_fl'").fetch1())
+    except:
+        return None, None, None, None, None, None
+    right_fl = pd.Series((TrackingBP & f'name="{recording}"' & "bpname='right_fl'").fetch1())
+    left_hl = pd.Series((TrackingBP & f'name="{recording}"' & "bpname='left_hl'").fetch1())
+    right_hl = pd.Series((TrackingBP & f'name="{recording}"' & "bpname='right_hl'").fetch1())
+    body = pd.Series((TrackingBP & f'name="{recording}"' & "bpname='body'").fetch1())
+
         
     logger.info(f"Got {len(units)} units for {recording['name']}")
 
@@ -125,6 +105,16 @@ def upsample_frames_to_ms(var):
 
 for rec in get_recording_names("CUN/PPN"):
     print(f"Processing {rec}")
+    tracking_save_path = cache / f"{rec}.parquet"
+    if tracking_save_path.exists():
+        continue
+    
+    # skip recs already done
+    date = int(rec.split("_")[1])
+    mouse = rec.split("_")[2]
+    if mouse in ["BAA110516", "BAA110517", "AAA1110750", "BAA1110279"] or date < 210916:
+        continue
+
     units, left_fl, right_fl, left_hl, right_hl, body = get_data(rec)
     if units is None:
         continue
@@ -134,34 +124,31 @@ for rec in get_recording_names("CUN/PPN"):
     tracking = dict(
         x = upsample_frames_to_ms(body.x),
         y = upsample_frames_to_ms(body.y),
-        v = upsample_frames_to_ms(body.speed),
-        left_fl_v = upsample_frames_to_ms(left_fl.speed),
-        right_fl_v = upsample_frames_to_ms(right_fl.speed),
-        left_hl_v = upsample_frames_to_ms(left_hl.speed),
-        right_hl_v = upsample_frames_to_ms(right_hl.speed),
+        v = upsample_frames_to_ms(body.bp_speed),
+        left_fl_v = upsample_frames_to_ms(left_fl.bp_speed),
+        right_fl_v = upsample_frames_to_ms(right_fl.bp_speed),
+        left_hl_v = upsample_frames_to_ms(left_hl.bp_speed),
+        right_hl_v = upsample_frames_to_ms(right_hl.bp_speed),
     )
-    pd.DataFrame(tracking).to_parquet(cache / f"{rec}.parquet") 
 
     # save units data
     for i, unit in units.iterrows():
         if unit.brain_region not in ["PRNr", "PRNc"]:
             continue
+        assert len
         name = f"{rec}_{unit.unit_id}_{unit.brain_region}.npy"
         unit_save = cache / name
 
         # get firing rate
         if not unit_save.exists():
-            time = np.zeros(len(tracking["v"]))  # time in milliseconds
-            spikes_times = np.int64(np.round(unit.spikes_ms))
-            spikes_times = spikes_times[spikes_times < len(time)]
-            time[spikes_times] = 1
-
-            fr = calc_firing_rate(time, dt=50)  
             try:
-                np.save(unit_save, fr)
+                np.save(unit_save, unit.firing_rate)
             except:
                 logger.warning(f"Could not save {unit_save}")
                 continue
-        else:
-            fr = np.load(unit_save)
+        # else:
+        #     fr = np.load(unit_save)
+
+    pd.DataFrame(tracking).to_parquet(tracking_save_path) 
+
 
