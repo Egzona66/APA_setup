@@ -18,14 +18,14 @@ correct_for_paw: True  #  adjust all data to make it look like mice always step 
 
 
 # ----------------------------------- paths ---------------------------------- #
-frames_file: "F:\\Egzona\\Forceplate\\Analysis backup\\100422_ALLtrials_CTRL-DTR_conditions.csv"  # CSV with trials start frames and metadata
-calibration_file: "F:\\Egzona\\Forceplate\\forceplatesensors_calibration4.csv"  # CSV with volts/gr calibration data
-main_fld: "F:\\Egzona\\Forceplate\\CURRENT ANALYSIS TRIALS"  # main data folder.
+frames_file: "/Volumes/EGZONA/Egzona/Forceplate/Analysis backup/100422_ALLtrials_CTRL-DTR_conditions.csv"  # CSV with trials start frames and metadata
+calibration_file: "/Volumes/EGZONA/Egzona/Forceplate/forceplatesensors_calibration4.csv"  # CSV with volts/gr calibration data
+main_fld: "/Volumes/EGZONA/Egzona/Forceplate/CURRENT ANALYSIS TRIALS"  # main data folder.
 
 
-# frames_file: "F:\\Egzona\\Forceplate\\240522_ALL_trials_2022_analysis.csv"  # CSV with trials start frames and metadata
-# calibration_file: "F:\\Egzona\\Forceplate\\forceplatesensors_calibration4.csv"  # CSV with volts/gr calibration data
-# main_fld: "F:\\Egzona\\Forceplate\\CURRENT ANALYSIS TRIALS"  # main data folder.
+# frames_file: "F:/Egzona/Forceplate/240522_ALL_trials_2022_analysis.csv"  # CSV with trials start frames and metadata
+# calibration_file: "F:/Egzona/Forceplate/forceplatesensors_calibration4.csv"  # CSV with volts/gr calibration data
+# main_fld: "F:/Egzona/Forceplate/CURRENT ANALYSIS TRIALS"  # main data folder.
 
 # --------------------------------- analysis --------------------------------- #
 fps: 600  # all trials are scaled in time to have this target FPS

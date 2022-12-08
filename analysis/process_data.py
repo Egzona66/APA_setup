@@ -6,7 +6,9 @@ import numpy as np
 import sys
 
 sys.path.append("./")
-sys.path.append(r"C:\Users\ucqfajm\Documents\GitHub\APA_setup\analysis")
+# sys.path.append(r"C:\Users\ucqfajm\Documents\GitHub\APA_setup\analysis")
+sys.path.append(r"/Users/federicoclaudi/Documents/github/APA_setup/analysis")
+
 from fcutils.path import from_yaml, subdirs
 from fcutils.progress import track
 from fcutils.maths.signals import convolve_with_gaussian, get_onset_offset
