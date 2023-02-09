@@ -91,16 +91,17 @@ logger.info("Starting")
 for rec in get_recording_names("CUN/PPN"):
     print(f"Processing {rec}")
     tracking_save_path = cache / f"{rec}.parquet"
-    if tracking_save_path.exists():
-        continue
+    # if tracking_save_path.exists():
+    #     print("     already done")
+    #     continue
     
     # skip recs already done
     date = int(rec.split("_")[1])
     mouse = rec.split("_")[2]
     # if mouse in ["AAA1110750", "BAA110516", "BAA110517", "BAA1110279", "BAA1110281"] or date < 0:
     #     continue
-    if date < 210721:
-        continue
+    # if date < 210721:
+    #     continue
 
     units, left_fl, right_fl, left_hl, right_hl, body = get_data(rec)
     if units is None:
@@ -123,22 +124,24 @@ for rec in get_recording_names("CUN/PPN"):
     )
 
     # save units data
-    # for i, unit in units.iterrows():
-    #     if unit.brain_region not in ["PRNr", "PRNc"]:
-    #         continue
-    #     assert len
-    #     name = f"{rec}_{unit.unit_id}_{unit.brain_region}.npy"
-    #     unit_save = cache / name
+    for i, unit in units.iterrows():
+        # regions = ["PRNr", "PRNc"]
+        regions = ["ICe", "VISp1", "VISp2/3"]
+        if unit.brain_region not in regions:
+            continue
+        assert len
+        name = f"{rec}_{unit.unit_id}_{unit.brain_region}.npy"
+        unit_save = cache / name
 
-    #     # get firing rate
-    #     if not unit_save.exists():
-    #         try:
-    #             np.save(unit_save, unit.firing_rate)
-    #         except:
-    #             logger.warning(f"Could not save {unit_save}")
-    #             continue
-    #     # else:
-    #     #     fr = np.load(unit_save)
+        # get firing rate
+        if not unit_save.exists():
+            try:
+                np.save(unit_save, unit.firing_rate)
+            except:
+                logger.warning(f"Could not save {unit_save}")
+                continue
+        # else:
+        #     fr = np.load(unit_save)
 
     pd.DataFrame(tracking).to_parquet(tracking_save_path) 
 
