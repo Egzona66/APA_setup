@@ -51,7 +51,7 @@ def get_data(recording: str):
         cf,
         spikes=True,
         firing_rate=True,
-        frate_window=250,
+        frate_window=100,
     )
 
 
@@ -126,7 +126,7 @@ for rec in get_recording_names("CUN/PPN"):
     # save units data
     for i, unit in units.iterrows():
         # regions = ["PRNr", "PRNc"]
-        regions = ["ICe", "VISp1", "VISp2/3"]
+        regions = ["ICe", "VISp1", "VISp2/3", "PRNc", "PRNr", "CUN"]
         if unit.brain_region not in regions:
             continue
         assert len
