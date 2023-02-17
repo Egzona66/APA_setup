@@ -12,7 +12,8 @@ from scipy.ndimage.filters import gaussian_filter1d
 
 
 sys.path.append("./")
-sys.path.append(r"C:\Users\Federico\Documents\GitHub\pysical_locomotion")
+# sys.path.append(r"C:\Users\Federico\Documents\GitHub\pysical_locomotion")
+sys.path.append("/Users/federicoclaudi/Documents/Github/LocomotionControl")
 
 from data.dbase.db_tables import (
     TrackingBP,
@@ -24,7 +25,7 @@ from data.dbase.db_tables import (
 from data.dbase._tracking import load_dlc_tracking, process_body_part
 
 
-cache = Path(r"J:\APA")
+cache = Path("/Users/federicoclaudi/Desktop/APA")
 
 
 
@@ -97,19 +98,16 @@ for rec in get_recording_names("CUN/PPN"):
     # skip recs already done
     date = int(rec.split("_")[1])
     mouse = rec.split("_")[2]
+
     # if mouse in ["AAA1110750", "BAA110516", "BAA110517", "BAA1110279", "BAA1110281"] or date < 0:
     #     continue
-    if date < 210721:
-        continue
+    # if date < 210721:
+    #     continue
 
     units, left_fl, right_fl, left_hl, right_hl, body = get_data(rec)
     if units is None:
         print("Skipping no units")
         continue
-
-    # assert len(units.iloc[1].firing_rate) == len(body.x), f"Rec samples: {len(units.iloc[1].firing_rate)}, tracking: {len(body.x)}"
-    
-
 
     # save tracking data
     tracking = dict(
@@ -123,22 +121,22 @@ for rec in get_recording_names("CUN/PPN"):
     )
 
     # save units data
-    # for i, unit in units.iterrows():
-    #     if unit.brain_region not in ["PRNr", "PRNc"]:
-    #         continue
-    #     assert len
-    #     name = f"{rec}_{unit.unit_id}_{unit.brain_region}.npy"
-    #     unit_save = cache / name
+    for i, unit in units.iterrows():
+        if unit.brain_region not in ["PRNr", "PRNc"]:
+            continue
+        assert len
+        name = f"{rec}_{unit.unit_id}_{unit.brain_region}.npy"
+        unit_save = cache / name
 
-    #     # get firing rate
-    #     if not unit_save.exists():
-    #         try:
-    #             np.save(unit_save, unit.firing_rate)
-    #         except:
-    #             logger.warning(f"Could not save {unit_save}")
-    #             continue
-    #     # else:
-    #     #     fr = np.load(unit_save)
+        # get firing rate
+        if not unit_save.exists():
+            try:
+                np.save(unit_save, unit.firing_rate)
+            except:
+                logger.warning(f"Could not save {unit_save}")
+                continue
+        # else:
+        #     fr = np.load(unit_save)
 
     pd.DataFrame(tracking).to_parquet(tracking_save_path) 
 
