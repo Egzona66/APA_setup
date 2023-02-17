@@ -28,6 +28,7 @@ from data.dbase._tracking import load_dlc_tracking, process_body_part
 cache = Path("/Users/federicoclaudi/Desktop/APA")
 
 
+regions = ["ICe", "VISp1", "VISp2/3", "PRNc", "PRNr", "CUN"]
 
 def get_recording_names(region="MOs"):
     """
@@ -52,15 +53,18 @@ def get_data(recording: str):
         cf,
         spikes=True,
         firing_rate=True,
-        frate_window=250,
+        frate_window=100,
     )
-
+    logger.info(f"Tot of {len(units)} units for {recording['name']}")
+    print(units.brain_region.unique())
 
     try:
-        print(units.brain_region.unique())
-        units = units.loc[units.brain_region.isin(["PRNr", "PRNc"])]
-    except:
+        units = units.loc[units.brain_region.isin(regions)]
+    except Exception as e:
+        print("No units: ", e)
         return None, None, None, None, None, None
+    
+    print(f"Kept {len(units)} units")
 
     # if not len(units):
     #     return None, None, None, None, None, None
@@ -70,18 +74,24 @@ def get_data(recording: str):
     # get tracking
     logger.info("Getting tracking")
     recname = recording["name"]
+
+    
+
     try:
-        left_fl =  pd.Series((TrackingBP & f'name="{recname}"' & "bpname='left_fl'").fetch1())
+        tracking = pd.DataFrame((TrackingBP & f'name="{recname}"').fetch())    
     except Exception as e:
         logger.info(f"Failed to get tracking: {e}")
         return None, None, None, None, None, None
-    right_fl = pd.Series((TrackingBP & f'name="{recname}"' & "bpname='right_fl'").fetch1())
-    left_hl = pd.Series((TrackingBP & f'name="{recname}"' & "bpname='left_hl'").fetch1())
-    right_hl = pd.Series((TrackingBP & f'name="{recname}"' & "bpname='right_hl'").fetch1())
-    body = pd.Series((TrackingBP & f'name="{recname}"' & "bpname='body'").fetch1())
-
+    print("Got tracking")
+    print(tracking.head())
         
-    logger.info(f"Got {len(units)} units for {recording['name']}")
+    left_fl =  tracking.loc[tracking.bpname == "left_fl"]
+    right_fl = tracking.loc[tracking.bpname == "right_fl"]
+    left_hl = tracking.loc[tracking.bpname == "left_hl"]
+    right_hl = tracking.loc[tracking.bpname == "right_hl"]
+    body = tracking.loc[tracking.bpname == "body"]
+    
+        
 
     return units, left_fl, right_fl, left_hl, right_hl, body
 
@@ -89,11 +99,12 @@ def get_data(recording: str):
 
 
 logger.info("Starting")
-for rec in get_recording_names("CUN/PPN"):
+for rec in get_recording_names("CUN/PPN")[2:]:
     print(f"Processing {rec}")
     tracking_save_path = cache / f"{rec}.parquet"
-    if tracking_save_path.exists():
-        continue
+    # if tracking_save_path.exists():
+    #     print("     already done")
+    #     continue
     
     # skip recs already done
     date = int(rec.split("_")[1])
@@ -122,7 +133,8 @@ for rec in get_recording_names("CUN/PPN"):
 
     # save units data
     for i, unit in units.iterrows():
-        if unit.brain_region not in ["PRNr", "PRNc"]:
+        # regions = ["PRNr", "PRNc"]
+        if unit.brain_region not in regions:
             continue
         assert len
         name = f"{rec}_{unit.unit_id}_{unit.brain_region}.npy"
